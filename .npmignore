@@ -1,0 +1,19 @@
+# Source code
+src/
+
+# Dev files
+.github/
+.eslintrc
+.prettierrc
+.gitignore
+tsconfig.json
+*.test.ts
+jest.config.js
+coverage/
+
+# Misc
+node_modules/
+.git/
+.vscode/
+.idea/
+*.log
