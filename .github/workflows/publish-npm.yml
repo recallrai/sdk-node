@@ -30,6 +30,11 @@ jobs:
       #   run: npm test
 
       - name: Publish package
-        run: npm publish
+        run: |
+          if [ -n "${{ secrets.NPM_ORG }}" ]; then
+            npm publish --access public --scope=${{ secrets.NPM_ORG }}
+          else
+            npm publish
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
