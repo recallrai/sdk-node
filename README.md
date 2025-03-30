@@ -397,7 +397,7 @@ async function chatWithMemory(userId: string, sessionId?: string): Promise<strin
       temperature: 0.7
     });
     
-    const assistantMessage = response.choices[0].message.content || "I'm not sure how to respond to that.";
+    const assistantMessage = response.choices[0].message.content;
     
     // Print the assistant's response
     console.log(`Assistant: ${assistantMessage}`);
