@@ -1,6 +1,6 @@
 {
     "name": "recallrai",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Official Node.js SDK for RecallrAI - Revolutionary contextual memory system that enables AI assistants to form meaningful connections between conversations, just like human memory.",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
