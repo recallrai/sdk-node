@@ -40,7 +40,7 @@ if ! git diff --quiet; then
 fi
 
 # Get current version from package.json
-CURRENT_VERSION=$(grep -o '"version": "[^"]*"' package.json | cut -d'"' -f4)
+CURRENT_VERSION=$(grep -m 1 -E -o '"version": "[0-9]+\.[0-9]+\.[0-9]+"' package.json | cut -d'"' -f4)
 echo "Current version: $CURRENT_VERSION"
 
 # Split version into components
