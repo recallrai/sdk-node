@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# filepath: bump_version.sh
 #
 # Version bump and tagging script for recallrai Node.js SDK
 # 
@@ -40,7 +41,7 @@ if ! git diff --quiet; then
 fi
 
 # Get current version from package.json
-CURRENT_VERSION=$(grep -m 1 -E -o '"version": "[0-9]+\.[0-9]+\.[0-9]+"' package.json | cut -d'"' -f4)
+CURRENT_VERSION=$(node -p "require('./package.json').version")
 echo "Current version: $CURRENT_VERSION"
 
 # Split version into components
@@ -65,15 +66,15 @@ NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
 echo "New version: $NEW_VERSION"
 
 # Update version in package.json
-sed -i "" "s|\"version\": \"${CURRENT_VERSION}\"|\"version\": \"${NEW_VERSION}\"|" package.json
+npm version $NEW_VERSION --no-git-tag-version
 echo "✓ Updated version in package.json"
 
 # Update version in src/index.ts
-sed -i "" "s|export const version = '${CURRENT_VERSION}'|export const version = '${NEW_VERSION}'|" src/index.ts
+sed -i "s/export const version = \"[^\"]*\"/export const version = \"$NEW_VERSION\"/" src/index.ts
 echo "✓ Updated version in src/index.ts"
 
 # Commit changes
-git add package.json src/index.ts
+git add package.json package-lock.json src/index.ts
 git commit -m "Bump version to $NEW_VERSION"
 echo "✓ Committed version changes to git"
 
@@ -87,7 +88,7 @@ git tag -a "$TAG_NAME" -m "$TAG_MESSAGE"
 echo "✓ Created git tag $TAG_NAME"
 
 # Push changes and tag
-git push origin main
+git push origin main 
 git push origin "$TAG_NAME"
 echo "✓ Pushed changes and tag to remote"
 
