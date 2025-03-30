@@ -65,11 +65,11 @@ NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
 echo "New version: $NEW_VERSION"
 
 # Update version in package.json
-sed -i "s|\"version\": \"${CURRENT_VERSION}\"|\"version\": \"${NEW_VERSION}\"|" package.json
+sed -i "" "s|\"version\": \"${CURRENT_VERSION}\"|\"version\": \"${NEW_VERSION}\"|" package.json
 echo "✓ Updated version in package.json"
 
 # Update version in src/index.ts
-sed -i "s|export const version = '${CURRENT_VERSION}'|export const version = '${NEW_VERSION}'|" src/index.ts
+sed -i "" "s|export const version = '${CURRENT_VERSION}'|export const version = '${NEW_VERSION}'|" src/index.ts
 echo "✓ Updated version in src/index.ts"
 
 # Commit changes
