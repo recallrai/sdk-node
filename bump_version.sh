@@ -74,12 +74,16 @@ echo "✓ Updated version in package.json"
 sed -i "s/export const version = \"[^\"]*\"/export const version = \"$NEW_VERSION\"/" src/index.ts
 echo "✓ Updated version in src/index.ts"
 
+# Remove old dist directory
+rm -rf dist/
+echo "✓ Removed old dist directory"
+
 # Build the project
 npm run build
 echo "✓ Built the project with updated version"
 
 # Commit changes
-git add package.json package-lock.json src/index.ts dist/
+git add package.json package-lock.json src/index.ts
 git commit -m "Bump version to $NEW_VERSION"
 echo "✓ Committed version changes to git"
 
