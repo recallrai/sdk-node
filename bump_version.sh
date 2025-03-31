@@ -5,9 +5,10 @@
 # 
 # This script:
 # 1. Bumps version in package.json and src/index.ts
-# 2. Commits changes
-# 3. Creates a git tag
-# 4. Pushes changes and tag to GitHub
+# 2. Builds the project
+# 3. Commits changes
+# 4. Creates a git tag
+# 5. Pushes changes and tag to GitHub
 #
 # Usage: ./bump_version.sh <major|minor|patch> [tag message]
 
@@ -73,8 +74,12 @@ echo "✓ Updated version in package.json"
 sed -i "s/export const version = \"[^\"]*\"/export const version = \"$NEW_VERSION\"/" src/index.ts
 echo "✓ Updated version in src/index.ts"
 
+# Build the project
+npm run build
+echo "✓ Built the project with updated version"
+
 # Commit changes
-git add package.json package-lock.json src/index.ts
+git add package.json package-lock.json src/index.ts dist/
 git commit -m "Bump version to $NEW_VERSION"
 echo "✓ Committed version changes to git"
 
