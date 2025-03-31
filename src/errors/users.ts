@@ -1,5 +1,11 @@
 import { RecallrAIError } from './base';
 
+/**
+ * Base class for user-related exceptions.
+ * 
+ * This exception is raised for errors related to user management
+ * in the RecallrAI API.
+ */
 export class UserError extends RecallrAIError {
     constructor(
         message: string = 'User error occurred',
@@ -12,6 +18,12 @@ export class UserError extends RecallrAIError {
     }
 }
 
+/**
+ * Raised when a user is not found.
+ * 
+ * This exception is typically raised when trying to access or modify
+ * a user that doesn't exist.
+ */
 export class UserNotFoundError extends UserError {
     public userId?: string;
 
@@ -29,6 +41,12 @@ export class UserNotFoundError extends UserError {
     }
 }
 
+/**
+ * Raised when a user already exists.
+ * 
+ * This exception is typically raised when trying to create a user
+ * that already exists in the system.
+ */
 export class UserAlreadyExistsError extends UserError {
     public userId?: string;
 

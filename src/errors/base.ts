@@ -1,8 +1,19 @@
+/**
+ * Base exception for all RecallrAI SDK errors.
+ */
 export class RecallrAIError extends Error {
     public code?: string;
     public httpStatus?: number;
     public details?: Record<string, any>;
 
+    /**
+     * Initialize a RecallrAI error.
+     *
+     * @param message - A human-readable error message
+     * @param code - An optional error code
+     * @param httpStatus - The HTTP status code that triggered this error
+     * @param details - Optional additional details about the error
+     */
     constructor(
         message: string,
         code?: string,
@@ -19,10 +30,10 @@ export class RecallrAIError extends Error {
         Object.setPrototypeOf(this, RecallrAIError.prototype);
     }
 
+    /**
+     * Return a string representation of the error.
+     */
     toString(): string {
-        if (this.code) {
-            return `${this.code}: ${this.message}`;
-        }
-        return this.message;
+        return `${this.message}. HTTP Status: ${this.httpStatus}`;
     }
 }

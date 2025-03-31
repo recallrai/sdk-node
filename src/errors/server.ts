@@ -1,5 +1,8 @@
 import { RecallrAIError } from './base';
 
+/**
+ * Base class for server-related exceptions.
+ */
 export class ServerError extends RecallrAIError {
     constructor(
         message: string = 'Server error occurred',
@@ -12,6 +15,11 @@ export class ServerError extends RecallrAIError {
     }
 }
 
+/**
+ * Raised when the RecallrAI API encounters an internal server error.
+ * 
+ * This exception is typically raised when the API returns a 5xx error code.
+ */
 export class InternalServerError extends ServerError {
     constructor(
         message: string = 'Internal server error',
