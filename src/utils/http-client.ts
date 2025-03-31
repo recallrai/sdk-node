@@ -106,7 +106,7 @@ export class HTTPClient {
         if (axios.isAxiosError(error)) {
             const status = error.response?.status;
             const data = error.response?.data || {};
-            const detail = data.detail || error.message;
+            const detail = data.detail || 'An unknown error occurred';
 
             if (error.code === 'ECONNABORTED') {
                 return new TimeoutError('Request timed out');

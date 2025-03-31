@@ -7,6 +7,14 @@ import {
     SessionList, 
     Context 
 } from './session';
+import {
+    userSchema,
+    userListSchema,
+    messageSchema,
+    sessionSchema,
+    sessionListSchema,
+    contextSchema
+} from './schemas';
 
 export {
     // User models
@@ -19,5 +27,13 @@ export {
     Message,
     Session,
     SessionList,
-    Context
+    Context,
+    
+    // Schemas
+    userSchema,
+    userListSchema,
+    messageSchema,
+    sessionSchema,
+    sessionListSchema,
+    contextSchema
 };
