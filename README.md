@@ -520,6 +520,29 @@ When implementing error handling with the RecallrAI SDK, consider these best pra
 
 For more detailed information on specific exceptions, refer to the API documentation.
 
+## Testing
+
+The SDK includes integration tests that make real API calls to verify functionality:
+
+```bash
+# Run integration tests
+npm test
+```
+
+### Setting Up Test Credentials
+
+To run the integration tests:
+
+1. Copy `.env.example` to `.env`
+2. Add your test API credentials to the `.env` file:
+
+```shell
+RECALLRAI_TEST_API_KEY=rai_your_test_api_key
+RECALLRAI_TEST_PROJECT_ID=your_test_project_id
+```
+
+**Important**: Integration tests will create and delete real users and sessions. Use a test project and credentials, not production.
+
 ## Conclusion
 
 This README outlines the basic usage of the RecallrAI SDK functions for user and session management. For additional documentation and advanced usage, please see the [official documentation](https://recallrai.com) or the source code repository on [GitHub](https://github.com/recallrai/sdk-node).
