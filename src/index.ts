@@ -42,7 +42,7 @@ export const errors = {
 };
 
 // The current version of the SDK
-export const version = '0.1.0';
+export const version = '0.2.2';
 
 // Default export is the RecallrAI client
 export default RecallrAI;

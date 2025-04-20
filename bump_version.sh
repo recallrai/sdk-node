@@ -71,7 +71,7 @@ npm version $NEW_VERSION --no-git-tag-version
 echo "✓ Updated version in package.json"
 
 # Update version in src/index.ts
-sed -i "s/export const version = \"[^\"]*\"/export const version = \"$NEW_VERSION\"/" src/index.ts
+sed -i "s/export const version = '[^']*'/export const version = '$NEW_VERSION'/" src/index.ts
 echo "✓ Updated version in src/index.ts"
 
 # Remove old dist directory

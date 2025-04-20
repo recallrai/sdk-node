@@ -93,7 +93,8 @@ export class RecallrAI {
             const response = await this.http.get('/api/v1/users', { params: { offset, limit } });
             return UserList.fromApiResponse(response.data);
         } catch (error) {
-            throw new RecallrAIError('Failed to list users', undefined, (error as any).status);
+            // throw new RecallrAIError('Failed to list users', undefined, (error as any).status);
+            throw error;
         }
     }
 }
