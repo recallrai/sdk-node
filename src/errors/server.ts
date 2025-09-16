@@ -31,3 +31,20 @@ export class InternalServerError extends ServerError {
         Object.setPrototypeOf(this, InternalServerError.prototype);
     }
 }
+
+/**
+ * Raised when the RecallrAI API rate limits the client.
+ * 
+ * Typically corresponds to HTTP 429 Too Many Requests.
+ */
+export class RateLimitError extends ServerError {
+    constructor(
+        message: string = 'Rate limit exceeded',
+        code: string = 'rate_limit',
+        httpStatus: number = 429,
+        details?: Record<string, any>,
+    ) {
+        super(message, code, httpStatus, details);
+        Object.setPrototypeOf(this, RateLimitError.prototype);
+    }
+}
