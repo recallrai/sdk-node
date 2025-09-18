@@ -11,6 +11,7 @@ import {
     ConnectionError,
     ServerError,
     InternalServerError,
+    RateLimitError,
     SessionError,
     InvalidSessionStateError,
     SessionNotFoundError,
@@ -32,6 +33,7 @@ export const errors = {
     ConnectionError,
     ServerError,
     InternalServerError,
+    RateLimitError,
     SessionError,
     InvalidSessionStateError,
     SessionNotFoundError,
@@ -42,7 +44,8 @@ export const errors = {
 };
 
 // The current version of the SDK
-export const version = '0.2.2';
+import pkg from '../package.json';
+export const version = pkg.version;
 
 // Default export is the RecallrAI client
 export default RecallrAI;

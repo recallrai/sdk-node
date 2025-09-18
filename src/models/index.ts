@@ -7,13 +7,18 @@ import {
     SessionList, 
     Context 
 } from './session';
+import { 
+     SessionMessagesList 
+} from './session';
 import {
     userSchema,
     userListSchema,
     messageSchema,
     sessionSchema,
     sessionListSchema,
-    contextSchema
+    contextSchema,
+    userMemoriesListSchema,
+    userMemoryItemSchema,
 } from './schemas';
 
 export {
@@ -28,6 +33,7 @@ export {
     Session,
     SessionList,
     Context,
+     SessionMessagesList,
     
     // Schemas
     userSchema,
@@ -35,5 +41,8 @@ export {
     messageSchema,
     sessionSchema,
     sessionListSchema,
-    contextSchema
+    contextSchema,
+    userMemoriesListSchema,
+    userMemoryItemSchema,
 };
+

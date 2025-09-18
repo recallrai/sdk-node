@@ -2,7 +2,8 @@ import {
     messageSchema, 
     sessionSchema, 
     sessionListSchema, 
-    contextSchema 
+    contextSchema,
+    sessionMessagesListSchema
 } from './schemas';
 
 /**
@@ -87,6 +88,11 @@ export class Session {
     public createdAt: Date;
 
     /**
+     * Optional metadata for the session
+     */
+    public metadata: Record<string, any> = {};
+
+    /**
      * Creates a new Session instance
      * 
      * @param data - Session data
@@ -95,6 +101,7 @@ export class Session {
         sessionId: string;
         status: SessionStatus | string;
         createdAt: string | Date;
+        metadata?: Record<string, any>;
     }) {
         const parsedData = {
             ...data,
@@ -109,6 +116,7 @@ export class Session {
         this.sessionId = validated.sessionId;
         this.status = validated.status;
         this.createdAt = validated.createdAt;
+        this.metadata = validated.metadata || {};
     }
     
     private mapStatusStringToEnum(status: string): SessionStatus {
@@ -131,6 +139,7 @@ export class Session {
             sessionId: data.session_id,
             status: data.status,
             createdAt: data.created_at,
+            metadata: data.metadata || {},
         });
     }
 }
@@ -225,6 +234,49 @@ export class Context {
         return new Context({
             memoryUsed: data.memory_used,
             context: data.context,
+        });
+    }
+}
+
+/**
+ * Represents a paginated list of messages in a session.
+ */
+export class SessionMessagesList {
+    /**
+     * List of messages in the page
+     */
+    public messages: Message[];
+
+    /**
+     * Total number of messages in the session
+     */
+    public total: number;
+
+    /**
+     * Whether there are more messages to fetch
+     */
+    public hasMore: boolean;
+
+    constructor(data: { messages: Message[]; total: number; hasMore: boolean; }) {
+        // validate counts and booleans; messages already validated individually
+        const validated = sessionMessagesListSchema.parse({
+            messages: data.messages.map(m => ({ role: m.role, content: m.content, timestamp: m.timestamp })),
+            total: data.total,
+            hasMore: data.hasMore,
+        });
+        this.messages = data.messages;
+        this.total = validated.total;
+        this.hasMore = validated.hasMore;
+    }
+
+    /**
+     * Create a SessionMessagesList instance from an API response
+     */
+    static fromApiResponse(data: any): SessionMessagesList {
+        return new SessionMessagesList({
+            messages: (data.messages || []).map((msg: any) => new Message(msg)),
+            total: data.total,
+            hasMore: data.has_more,
         });
     }
 }

@@ -36,6 +36,7 @@ export const sessionSchema = z.object({
     sessionId: z.string(),
     status: z.nativeEnum(SessionStatus),
     createdAt: z.date(),
+    metadata: z.record(z.any()).default({}),
 });
 
 /**
@@ -53,4 +54,29 @@ export const sessionListSchema = z.object({
 export const contextSchema = z.object({
     memoryUsed: z.boolean(),
     context: z.string(),
+});
+
+/**
+ * Schema for session messages list validation.
+ */
+export const sessionMessagesListSchema = z.object({
+    messages: z.array(messageSchema),
+    total: z.number(),
+    hasMore: z.boolean(),
+});
+
+/**
+ * Schemas for user memories
+ */
+export const userMemoryItemSchema = z.object({
+    memory_id: z.string(),
+    categories: z.array(z.string()),
+    content: z.string(),
+    created_at: z.string(),
+});
+
+export const userMemoriesListSchema = z.object({
+    items: z.array(userMemoryItemSchema),
+    total: z.number(),
+    has_more: z.boolean(),
 });

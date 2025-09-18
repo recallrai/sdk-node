@@ -1,5 +1,5 @@
 import { HTTPClient } from './utils/http-client';
-import { UserModel } from './models/user';
+import { UserModel, UserMemoriesList } from './models/user';
 import { Session } from './session';
 import { SessionList } from './models/session';
 import {
@@ -30,6 +30,27 @@ export class User {
         this.metadata = userData.metadata;
         this.createdAt = userData.createdAt;
         this.lastActiveAt = userData.lastActiveAt;
+    }
+
+    /**
+     * Refresh this user's data from the server.
+     * 
+     * @throws {UserNotFoundError} If the user is not found
+     */
+    async refresh(): Promise<void> {
+        try {
+            const response = await this.http.get(`/api/v1/users/${this.userId}`);
+            const updatedData = UserModel.fromApiResponse(response.data);
+            this.userData = updatedData;
+            this.userId = updatedData.userId;
+            this.metadata = updatedData.metadata;
+            this.lastActiveAt = updatedData.lastActiveAt;
+        } catch (error: any) {
+            if (error.status === 404) {
+                throw new UserNotFoundError(this.userId);
+            }
+            throw error;
+        }
     }
 
     /**
@@ -107,11 +128,11 @@ export class User {
      * @returns A Session object to interact with the created session
      * @throws {UserNotFoundError} If the user is not found
      */
-    async createSession(autoProcessAfterMinutes: number = -1): Promise<Session> {
+    async createSession(autoProcessAfterSeconds: number = 600, metadata?: Record<string, any>): Promise<Session> {
         try {
             const response = await this.http.post(
                 `/api/v1/users/${this.userId}/sessions`,
-                { auto_process_after_minutes: autoProcessAfterMinutes }
+                { auto_process_after_seconds: autoProcessAfterSeconds, metadata }
             );
 
             if (response.status !== 201) {
@@ -162,11 +183,11 @@ export class User {
      * @returns List of sessions with pagination info
      * @throws {UserNotFoundError} If the user is not found
      */
-    async listSessions(offset: number = 0, limit: number = 10): Promise<SessionList> {
+    async listSessions(offset: number = 0, limit: number = 10, metadataFilter?: Record<string, any>, userMetadataFilter?: Record<string, any>): Promise<SessionList> {
         try {
             const response = await this.http.get(
                 `/api/v1/users/${this.userId}/sessions`,
-                { params: { offset, limit } }
+                { params: { offset, limit, metadata_filter: metadataFilter, user_metadata_filter: userMetadataFilter } }
             );
 
             return SessionList.fromApiResponse(response.data);
@@ -179,6 +200,28 @@ export class User {
                 undefined,
                 error.status
             );
+        }
+    }
+
+    /**
+     * List user memories with pagination and optional category filters.
+     * 
+     * @param offset Number of records to skip
+     * @param limit Maximum number of records to return
+     * @param categories Optional list of category strings to filter by
+     */
+    async listMemories(offset: number = 0, limit: number = 20, categories?: string[]): Promise<UserMemoriesList> {
+        try {
+            const response = await this.http.get(
+                `/api/v1/users/${this.userId}/memories`,
+                { params: { offset, limit, categories } }
+            );
+            return UserMemoriesList.fromApiResponse(response.data);
+        } catch (error: any) {
+            if (error.status === 404) {
+                throw new UserNotFoundError(this.userId);
+            }
+            throw error;
         }
     }
 }

@@ -1,5 +1,5 @@
 import { HTTPClient } from './utils/http-client';
-import { Context, Message, MessageRole, SessionStatus } from './models/session';
+import { Context, MessageRole, SessionStatus, SessionMessagesList } from './models/session';
 import {
     UserNotFoundError,
     SessionNotFoundError,
@@ -222,10 +222,11 @@ export class Session {
      * @throws {UserNotFoundError} If the user is not found
      * @throws {SessionNotFoundError} If the session is not found
      */
-    async getMessages(): Promise<Message[]> {
+    async getMessages(offset: number = 0, limit: number = 50): Promise<SessionMessagesList> {
         try {
             const response = await this.http.get(
-                `/api/v1/users/${this.userId}/sessions/${this.sessionId}/messages`
+                `/api/v1/users/${this.userId}/sessions/${this.sessionId}/messages`,
+                { params: { offset, limit } }
             );
 
             if (response.status !== 200) {
@@ -236,7 +237,7 @@ export class Session {
                 );
             }
 
-            return response.data.messages.map((msg: any) => new Message(msg));
+            return SessionMessagesList.fromApiResponse(response.data);
         } catch (error: any) {
             if (error.status === 404) {
                 // Check if it's a user not found or session not found error

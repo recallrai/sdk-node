@@ -1,4 +1,4 @@
-import { userSchema, userListSchema } from './schemas';
+import { userSchema, userListSchema, userMemoriesListSchema } from './schemas';
 
 /**
  * Represents a user in the RecallrAI system.
@@ -103,6 +103,43 @@ export class UserList {
     static fromApiResponse(data: any): UserList {
         return new UserList({
             users: data.users.map((user: any) => UserModel.fromApiResponse({ user })),
+            total: data.total,
+            hasMore: data.has_more,
+        });
+    }
+}
+
+
+export interface UserMemoryItem {
+    memory_id: string;
+    categories: string[];
+    content: string;
+    created_at: string; // ISO string
+}
+
+export class UserMemoriesList {
+    public items: UserMemoryItem[];
+    public total: number;
+    public hasMore: boolean;
+
+    constructor(data: { 
+        items: UserMemoryItem[]; 
+        total: number; 
+        hasMore: boolean 
+    }) {
+        const validated = userMemoriesListSchema.parse({
+            items: data.items,
+            total: data.total,
+            has_more: data.hasMore,
+        });
+        this.items = validated.items;
+        this.total = validated.total;
+        this.hasMore = validated.has_more;
+    }
+
+    static fromApiResponse(data: any): UserMemoriesList {
+        return new UserMemoriesList({
+            items: data.items,
             total: data.total,
             hasMore: data.has_more,
         });

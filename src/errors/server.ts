@@ -38,13 +38,21 @@ export class InternalServerError extends ServerError {
  * Typically corresponds to HTTP 429 Too Many Requests.
  */
 export class RateLimitError extends ServerError {
+    public retryAfter?: number;
+
     constructor(
-        message: string = 'Rate limit exceeded',
-        code: string = 'rate_limit',
+        message: string = 'API rate limit exceeded',
+        code: string = 'rate_limit_exceeded',
         httpStatus: number = 429,
+        retryAfter?: number,
         details?: Record<string, any>,
     ) {
-        super(message, code, httpStatus, details);
+        const d = { ...(details || {}) };
+        if (typeof retryAfter === 'number') {
+            d.retry_after = retryAfter;
+        }
+        super(message, code, httpStatus, d);
         Object.setPrototypeOf(this, RateLimitError.prototype);
+        this.retryAfter = retryAfter;
     }
 }

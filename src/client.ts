@@ -1,7 +1,7 @@
 import { HTTPClient } from './utils/http-client';
 import { User } from './user';
 import { UserModel, UserList } from './models/user';
-import { UserAlreadyExistsError, UserNotFoundError, RecallrAIError } from './errors';
+import { UserAlreadyExistsError, UserNotFoundError } from './errors';
 
 export interface RecallrAIOptions {
     apiKey: string;
@@ -88,13 +88,8 @@ export class RecallrAI {
      * @param limit Maximum number of records to return
      * @returns List of users with pagination info
      */
-    async listUsers(offset: number = 0, limit: number = 10): Promise<UserList> {
-        try {
-            const response = await this.http.get('/api/v1/users', { params: { offset, limit } });
-            return UserList.fromApiResponse(response.data);
-        } catch (error) {
-            // throw new RecallrAIError('Failed to list users', undefined, (error as any).status);
-            throw error;
-        }
+    async listUsers(offset: number = 0, limit: number = 10, metadataFilter?: Record<string, any>): Promise<UserList> {
+        const response = await this.http.get('/api/v1/users', { params: { offset, limit, metadata_filter: metadataFilter } });
+        return UserList.fromApiResponse(response.data);
     }
 }

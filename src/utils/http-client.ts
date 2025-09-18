@@ -6,7 +6,9 @@ import {
     ValidationError,
     InternalServerError,
     AuthenticationError,
+    RateLimitError,
 } from '../errors';
+import pkg from '../../package.json';
 
 export interface HTTPClientOptions {
     apiKey: string;
@@ -29,8 +31,21 @@ export class HTTPClient {
                 'X-Project-Id': projectId,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'User-Agent': 'RecallrAI-Node-SDK',
+                'User-Agent': `RecallrAI-Node-SDK/${pkg.version}`,
             },
+        });
+
+        // Request interceptor to strip undefined/null params and data
+        this.client.interceptors.request.use((config) => {
+            if (config.params && typeof config.params === 'object') {
+                const entries = Object.entries(config.params).filter(([, v]) => v !== undefined && v !== null);
+                config.params = Object.fromEntries(entries);
+            }
+            if (config.data && typeof config.data === 'object') {
+                const entries = Object.entries(config.data).filter(([, v]) => v !== undefined && v !== null);
+                config.data = Object.fromEntries(entries);
+            }
+            return config;
         });
     }
 
@@ -122,6 +137,12 @@ export class HTTPClient {
 
             if (status === 422) {
                 return new ValidationError(detail);
+            }
+
+            if (status === 429) {
+                const retryAfterHeader = error.response?.headers?.['retry-after'];
+                const retryAfter = retryAfterHeader ? parseInt(retryAfterHeader, 10) : undefined;
+                return new RateLimitError(detail, 'rate_limit_exceeded', 429, retryAfter);
             }
 
             if (status === 500) {
