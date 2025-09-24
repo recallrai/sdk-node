@@ -8,12 +8,10 @@ import { RecallrAIError } from './base';
  */
 export class AuthenticationError extends RecallrAIError {
     constructor(
-        message: string = 'Invalid API key or authentication failed',
-        code: string = 'authentication_error',
+        message: string = "Invalid API key or authentication failed.",
         httpStatus: number = 401,
-        details?: Record<string, any>,
     ) {
-        super(message, code, httpStatus, details);
+        super(message, httpStatus);
         Object.setPrototypeOf(this, AuthenticationError.prototype);
     }
 }

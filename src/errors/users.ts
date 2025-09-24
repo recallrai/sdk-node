@@ -7,13 +7,8 @@ import { RecallrAIError } from './base';
  * in the RecallrAI API.
  */
 export class UserError extends RecallrAIError {
-    constructor(
-        message: string = 'User error occurred',
-        code: string = 'user_error',
-        httpStatus?: number,
-        details?: Record<string, any>,
-    ) {
-        super(message, code, httpStatus, details);
+    constructor(message: string, httpStatus: number) {
+        super(message, httpStatus);
         Object.setPrototypeOf(this, UserError.prototype);
     }
 }
@@ -25,19 +20,9 @@ export class UserError extends RecallrAIError {
  * a user that doesn't exist.
  */
 export class UserNotFoundError extends UserError {
-    public userId?: string;
-
-    constructor(
-        userId?: string,
-        message?: string,
-        code: string = 'user_not_found',
-        httpStatus: number = 404,
-        details?: Record<string, any>,
-    ) {
-        const errorMessage = message || `User${userId ? ` ${userId}` : ''} not found`;
-        super(errorMessage, code, httpStatus, details);
+    constructor(message: string, httpStatus: number) {
+        super(message, httpStatus);
         Object.setPrototypeOf(this, UserNotFoundError.prototype);
-        this.userId = userId;
     }
 }
 
@@ -48,18 +33,21 @@ export class UserNotFoundError extends UserError {
  * that already exists in the system.
  */
 export class UserAlreadyExistsError extends UserError {
-    public userId?: string;
-
-    constructor(
-        userId?: string,
-        message?: string,
-        code: string = 'user_already_exists',
-        httpStatus: number = 409,
-        details?: Record<string, any>,
-    ) {
-        const errorMessage = message || `User${userId ? ` ${userId}` : ''} already exists`;
-        super(errorMessage, code, httpStatus, details);
+    constructor(message: string, httpStatus: number) {
+        super(message, httpStatus);
         Object.setPrototypeOf(this, UserAlreadyExistsError.prototype);
-        this.userId = userId;
+    }
+}
+
+/**
+ * Raised when invalid categories are provided for user memories.
+ * 
+ * This exception is typically raised when trying to filter memories
+ * by categories that don't exist in the project.
+ */
+export class InvalidCategoriesError extends UserError {
+    constructor(message: string, httpStatus: number) {
+        super(message, httpStatus);
+        Object.setPrototypeOf(this, InvalidCategoriesError.prototype);
     }
 }

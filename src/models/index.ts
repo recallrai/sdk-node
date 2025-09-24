@@ -1,15 +1,32 @@
-import { UserModel, UserList } from './user';
+/**
+ * Models used in the SDK.
+ */
+
+import { 
+    UserModel, 
+    UserList, 
+    UserMemoriesList, 
+    UserMessage, 
+    UserMessagesList 
+} from './user';
 import { 
     MessageRole, 
     SessionStatus, 
     Message, 
     Session, 
     SessionList, 
-    Context 
+    Context,
+    SessionMessagesList,
+    RecallStrategy
 } from './session';
 import { 
-     SessionMessagesList 
-} from './session';
+    MergeConflictModel, 
+    MergeConflictList, 
+    MergeConflictStatus,
+    MergeConflictMemory,
+    MergeConflictQuestion,
+    MergeConflictAnswer,
+} from './merge_conflict';
 import {
     userSchema,
     userListSchema,
@@ -22,18 +39,27 @@ import {
 } from './schemas';
 
 export {
-    // User models
     UserModel,
     UserList,
-    
-    // Session models
+    UserMemoriesList,
+    UserMessage,
+    UserMessagesList,
+
     MessageRole,
     SessionStatus,
     Message,
     Session,
     SessionList,
     Context,
-     SessionMessagesList,
+    SessionMessagesList,
+    RecallStrategy,
+
+    MergeConflictModel,
+    MergeConflictList,
+    MergeConflictStatus,
+    MergeConflictMemory,
+    MergeConflictQuestion,
+    MergeConflictAnswer,
     
     // Schemas
     userSchema,

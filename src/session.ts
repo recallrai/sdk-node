@@ -68,7 +68,6 @@ export class Session {
             if (response.status !== 200) {
                 throw new RecallrAIError(
                     `Failed to add message: ${response.data?.detail || 'Unknown error'}`,
-                    undefined,
                     response.status
                 );
             }
@@ -77,14 +76,15 @@ export class Session {
                 // Check if it's a user not found or session not found error
                 const detail = error.message || '';
                 if (detail.includes(`User ${this.userId} not found`)) {
-                    throw new UserNotFoundError(this.userId);
+                    throw new UserNotFoundError(`User ${this.userId} not found`, error.status);
                 } else {
-                    throw new SessionNotFoundError(this.sessionId);
+                    throw new SessionNotFoundError(`Session ${this.sessionId} not found`, error.status);
                 }
             } else if (error.status === 400) {
                 const status = await this.getStatus();
                 throw new InvalidSessionStateError(
-                    `Cannot add message to session with status ${status}`
+                    `Cannot add message to session with status ${status}`,
+                    error.status
                 );
             }
             throw error;
@@ -110,7 +110,6 @@ export class Session {
             if (response.status !== 200) {
                 throw new RecallrAIError(
                     `Failed to get context: ${response.data?.detail || 'Unknown error'}`,
-                    undefined,
                     response.status
                 );
             }
@@ -128,9 +127,9 @@ export class Session {
                 // Check if it's a user not found or session not found error
                 const detail = error.message || '';
                 if (detail.includes(`User ${this.userId} not found`)) {
-                    throw new UserNotFoundError(this.userId);
+                    throw new UserNotFoundError(`User ${this.userId} not found`, error.status);
                 } else {
-                    throw new SessionNotFoundError(this.sessionId);
+                    throw new SessionNotFoundError(`Session ${this.sessionId} not found`, error.status);
                 }
             }
             throw error;
@@ -156,7 +155,6 @@ export class Session {
             if (response.status !== 200) {
                 throw new RecallrAIError(
                     `Failed to process session: ${response.data?.detail || 'Unknown error'}`,
-                    undefined,
                     response.status
                 );
             }
@@ -165,14 +163,15 @@ export class Session {
                 // Check if it's a user not found or session not found error
                 const detail = error.message || '';
                 if (detail.includes(`User ${this.userId} not found`)) {
-                    throw new UserNotFoundError(this.userId);
+                    throw new UserNotFoundError(`User ${this.userId} not found`, error.status);
                 } else {
-                    throw new SessionNotFoundError(this.sessionId);
+                    throw new SessionNotFoundError(`Session ${this.sessionId} not found`, error.status);
                 }
             } else if (error.status === 400) {
                 const status = await this.getStatus();
                 throw new InvalidSessionStateError(
-                    `Cannot process session with status ${status}`
+                    `Cannot process session with status ${status}`,
+                    error.status
                 );
             }
             throw error;
@@ -195,7 +194,6 @@ export class Session {
             if (response.status !== 200) {
                 throw new RecallrAIError(
                     `Failed to get session status: ${response.data?.detail || 'Unknown error'}`,
-                    undefined,
                     response.status
                 );
             }
@@ -206,9 +204,9 @@ export class Session {
                 // Check if it's a user not found or session not found error
                 const detail = error.message || '';
                 if (detail.includes(`User ${this.userId} not found`)) {
-                    throw new UserNotFoundError(this.userId);
+                    throw new UserNotFoundError(`User ${this.userId} not found`, error.status);
                 } else {
-                    throw new SessionNotFoundError(this.sessionId);
+                    throw new SessionNotFoundError(`Session ${this.sessionId} not found`, error.status);
                 }
             }
             throw error;
@@ -232,7 +230,6 @@ export class Session {
             if (response.status !== 200) {
                 throw new RecallrAIError(
                     `Failed to get messages: ${response.data?.detail || 'Unknown error'}`,
-                    undefined,
                     response.status
                 );
             }
@@ -243,9 +240,9 @@ export class Session {
                 // Check if it's a user not found or session not found error
                 const detail = error.message || '';
                 if (detail.includes(`User ${this.userId} not found`)) {
-                    throw new UserNotFoundError(this.userId);
+                    throw new UserNotFoundError(`User ${this.userId} not found`, error.status);
                 } else {
-                    throw new SessionNotFoundError(this.sessionId);
+                    throw new SessionNotFoundError(`Session ${this.sessionId} not found`, error.status);
                 }
             }
             throw error;

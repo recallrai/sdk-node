@@ -1,30 +1,24 @@
 /**
- * Base exception for all RecallrAI SDK errors.
+ * Base exception class for all RecallrAI SDK exceptions.
  */
 export class RecallrAIError extends Error {
-    public code?: string;
-    public httpStatus?: number;
-    public details?: Record<string, any>;
+    public message: string;
+    public httpStatus: number;
 
     /**
      * Initialize a RecallrAI error.
      *
-     * @param message - A human-readable error message
-     * @param code - An optional error code
-     * @param httpStatus - The HTTP status code that triggered this error
-     * @param details - Optional additional details about the error
+     * @param message - A human-readable error message.
+     * @param httpStatus - The HTTP status code that triggered this error.
      */
     constructor(
         message: string,
-        code?: string,
-        httpStatus?: number,
-        details?: Record<string, any>,
+        httpStatus: number,
     ) {
         super(message);
         this.name = this.constructor.name;
-        this.code = code;
+        this.message = message;
         this.httpStatus = httpStatus;
-        this.details = details || {};
 
         // Ensure proper inheritance in Node.js
         Object.setPrototypeOf(this, RecallrAIError.prototype);
@@ -34,6 +28,6 @@ export class RecallrAIError extends Error {
      * Return a string representation of the error.
      */
     toString(): string {
-        return `${this.message}. HTTP Status: ${this.httpStatus}`;
+        return `${this.message}. HTTP Status: ${this.httpStatus}.`;
     }
 }

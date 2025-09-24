@@ -1,38 +1,40 @@
+/**
+ * Exceptions for the RecallrAI SDK.
+ */
+
 import { RecallrAIError } from './base';
 import { AuthenticationError } from './auth';
-import { NetworkError, TimeoutError, ConnectionError } from './network';
-import { ServerError, InternalServerError, RateLimitError } from './server';
-import { SessionError, SessionNotFoundError, InvalidSessionStateError } from './sessions';
-import { UserError, UserNotFoundError, UserAlreadyExistsError } from './users';
+import { TimeoutError, ConnectionError } from './network';
+import { InternalServerError, RateLimitError } from './server';
+import { SessionNotFoundError, InvalidSessionStateError } from './sessions';
+import { UserNotFoundError, UserAlreadyExistsError, InvalidCategoriesError } from './users';
 import { ValidationError } from './validation';
+import { 
+    MergeConflictError, 
+    MergeConflictNotFoundError, 
+    MergeConflictAlreadyResolvedError,
+    MergeConflictInvalidQuestionsError,
+    MergeConflictMissingAnswersError,
+    MergeConflictInvalidAnswerError,
+} from './merge_conflicts';
 
 export {
-    // Base error
     RecallrAIError,
-    
-    // Authentication errors
     AuthenticationError,
-    
-    // Network errors
-    NetworkError,
-    TimeoutError,
+    TimeoutError, 
     ConnectionError,
-    
-    // Server errors
-    ServerError,
     InternalServerError,
     RateLimitError,
-    
-    // Session errors
-    SessionError,
-    SessionNotFoundError,
+    SessionNotFoundError, 
     InvalidSessionStateError,
-    
-    // User errors
-    UserError,
-    UserNotFoundError,
+    UserNotFoundError, 
     UserAlreadyExistsError,
-    
-    // Validation errors
-    ValidationError
+    InvalidCategoriesError,
+    ValidationError,
+    MergeConflictError,
+    MergeConflictNotFoundError,
+    MergeConflictAlreadyResolvedError,
+    MergeConflictInvalidQuestionsError,
+    MergeConflictMissingAnswersError,
+    MergeConflictInvalidAnswerError,
 };

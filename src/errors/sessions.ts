@@ -7,13 +7,8 @@ import { RecallrAIError } from './base';
  * in the RecallrAI API.
  */
 export class SessionError extends RecallrAIError {
-    constructor(
-        message: string = 'Session error occurred',
-        code: string = 'session_error',
-        httpStatus?: number,
-        details?: Record<string, any>,
-    ) {
-        super(message, code, httpStatus, details);
+    constructor(message: string, httpStatus: number) {
+        super(message, httpStatus);
         Object.setPrototypeOf(this, SessionError.prototype);
     }
 }
@@ -25,13 +20,8 @@ export class SessionError extends RecallrAIError {
  * on a session that is not in the expected state.
  */
 export class InvalidSessionStateError extends SessionError {
-    constructor(
-        message: string = 'Invalid session state',
-        code: string = 'invalid_session_state',
-        httpStatus: number = 400,
-        details?: Record<string, any>,
-    ) {
-        super(message, code, httpStatus, details);
+    constructor(message: string, httpStatus: number) {
+        super(message, httpStatus);
         Object.setPrototypeOf(this, InvalidSessionStateError.prototype);
     }
 }
@@ -43,18 +33,8 @@ export class InvalidSessionStateError extends SessionError {
  * a session that doesn't exist.
  */
 export class SessionNotFoundError extends SessionError {
-    public sessionId?: string;
-
-    constructor(
-        sessionId?: string,
-        message?: string,
-        code: string = 'session_not_found',
-        httpStatus: number = 404,
-        details?: Record<string, any>,
-    ) {
-        const errorMessage = message || `Session${sessionId ? ` ${sessionId}` : ''} not found`;
-        super(errorMessage, code, httpStatus, details);
+    constructor(message: string, httpStatus: number) {
+        super(message, httpStatus);
         Object.setPrototypeOf(this, SessionNotFoundError.prototype);
-        this.sessionId = sessionId;
     }
 }

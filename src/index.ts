@@ -1,47 +1,15 @@
+/**
+ * RecallrAI Node.js SDK.
+ *
+ * This package provides a Node.js interface to interact with the RecallrAI API.
+ */
+
 import { RecallrAI } from './client';
 import { User } from './user';
 import { Session } from './session';
+import { MergeConflict } from './merge_conflict';
 
-// Import errors explicitly
-import { 
-    RecallrAIError,
-    AuthenticationError,
-    NetworkError,
-    TimeoutError,
-    ConnectionError,
-    ServerError,
-    InternalServerError,
-    RateLimitError,
-    SessionError,
-    InvalidSessionStateError,
-    SessionNotFoundError,
-    UserError,
-    UserNotFoundError,
-    UserAlreadyExistsError,
-    ValidationError
-} from './errors';
-
-// Export main classes
-export { RecallrAI, User, Session };
-
-// Export errors explicitly
-export const errors = {
-    RecallrAIError,
-    AuthenticationError,
-    NetworkError,
-    TimeoutError,
-    ConnectionError,
-    ServerError,
-    InternalServerError,
-    RateLimitError,
-    SessionError,
-    InvalidSessionStateError,
-    SessionNotFoundError,
-    UserError,
-    UserNotFoundError,
-    UserAlreadyExistsError,
-    ValidationError
-};
+export { RecallrAI, User, Session, MergeConflict };
 
 // The current version of the SDK
 import pkg from '../package.json';

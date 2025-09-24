@@ -7,13 +7,8 @@ import { RecallrAIError } from './base';
  * due to invalid or missing parameters.
  */
 export class ValidationError extends RecallrAIError {
-    constructor(
-        message: string = 'Validation error',
-        code: string = 'validation_error',
-        httpStatus: number = 422,
-        details?: Record<string, any>,
-    ) {
-        super(message, code, httpStatus, details);
+    constructor(message: string, httpStatus: number) {
+        super(message, httpStatus);
         Object.setPrototypeOf(this, ValidationError.prototype);
     }
 }

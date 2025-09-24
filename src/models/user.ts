@@ -145,3 +145,71 @@ export class UserMemoriesList {
         });
     }
 }
+
+/**
+ * Represents a single message from a user's conversation history.
+ */
+export class UserMessage {
+    /**
+     * Role of the message sender (user or assistant).
+     */
+    public role: string;
+
+    /**
+     * Content of the message.
+     */
+    public content: string;
+
+    /**
+     * When the message was sent.
+     */
+    public timestamp: Date;
+
+    /**
+     * ID of the session this message belongs to.
+     */
+    public sessionId: string;
+
+    constructor(data: {
+        role: string;
+        content: string;
+        timestamp: Date;
+        sessionId: string;
+    }) {
+        this.role = data.role;
+        this.content = data.content;
+        this.timestamp = data.timestamp;
+        this.sessionId = data.sessionId;
+    }
+
+    static fromApiResponse(data: any): UserMessage {
+        return new UserMessage({
+            role: data.role,
+            content: data.content,
+            timestamp: new Date(data.timestamp),
+            sessionId: data.session_id,
+        });
+    }
+}
+
+/**
+ * Represents a list of user messages.
+ */
+export class UserMessagesList {
+    /**
+     * List of user messages.
+     */
+    public messages: UserMessage[];
+
+    constructor(data: {
+        messages: UserMessage[];
+    }) {
+        this.messages = data.messages;
+    }
+
+    static fromApiResponse(data: any): UserMessagesList {
+        return new UserMessagesList({
+            messages: data.messages.map((message: any) => UserMessage.fromApiResponse(message)),
+        });
+    }
+}

@@ -55,7 +55,7 @@ export class RecallrAI {
             return new User(this.http, userData);
         } catch (error: any) {
             if (error.status === 409) {
-                throw new UserAlreadyExistsError(userId);
+                throw new UserAlreadyExistsError(`User ${userId} already exists`, error.status);
             }
             throw error;
         }
@@ -75,7 +75,7 @@ export class RecallrAI {
             return new User(this.http, userData);
         } catch (error: any) {
             if (error.status === 404) {
-                throw new UserNotFoundError(userId);
+                throw new UserNotFoundError(`User ${userId} not found`, error.status);
             }
             throw error;
         }

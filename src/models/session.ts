@@ -24,6 +24,15 @@ export enum SessionStatus {
 }
 
 /**
+ * Type of recall strategy.
+ */
+export enum RecallStrategy {
+    LOW_LATENCY = "low_latency",
+    BALANCED = "balanced", 
+    DEEP = "deep"
+}
+
+/**
  * Represents a message in a conversation session.
  */
 export class Message {

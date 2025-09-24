@@ -1,7 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import {
     TimeoutError,
-    NetworkError,
     ConnectionError,
     ValidationError,
     InternalServerError,
@@ -119,34 +118,32 @@ export class HTTPClient {
      */
     private handleError(error: any): Error {
         if (axios.isAxiosError(error)) {
-            const status = error.response?.status;
+            const status = error.response?.status || 500;
             const data = error.response?.data || {};
             const detail = data.detail || 'An unknown error occurred';
 
             if (error.code === 'ECONNABORTED') {
-                return new TimeoutError('Request timed out');
+                return new TimeoutError('Request timed out', 408);
             }
 
             if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
-                return new ConnectionError(`Failed to connect to the API: ${error.message}`);
+                return new ConnectionError(`Failed to connect to the API: ${error.message}`, 503);
             }
 
             if (!error.response) {
-                return new NetworkError(`Network error occurred: ${error.message}`);
+                return new ConnectionError(`Network error occurred: ${error.message}`, 503);
             }
 
             if (status === 422) {
-                return new ValidationError(detail);
+                return new ValidationError(detail, status);
             }
 
             if (status === 429) {
-                const retryAfterHeader = error.response?.headers?.['retry-after'];
-                const retryAfter = retryAfterHeader ? parseInt(retryAfterHeader, 10) : undefined;
-                return new RateLimitError(detail, 'rate_limit_exceeded', 429, retryAfter);
+                return new RateLimitError(detail, status);
             }
 
             if (status === 500) {
-                return new InternalServerError(detail);
+                return new InternalServerError(detail, status);
             }
 
             if (status === 401) {

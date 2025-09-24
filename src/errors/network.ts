@@ -7,13 +7,8 @@ import { RecallrAIError } from './base';
  * and communication with the RecallrAI API.
  */
 export class NetworkError extends RecallrAIError {
-    constructor(
-        message: string = 'Network error occurred',
-        code: string = 'network_error',
-        httpStatus?: number,
-        details?: Record<string, any>,
-    ) {
-        super(message, code, httpStatus, details);
+    constructor(message: string, httpStatus: number) {
+        super(message, httpStatus);
         Object.setPrototypeOf(this, NetworkError.prototype);
     }
 }
@@ -25,12 +20,8 @@ export class NetworkError extends RecallrAIError {
  * takes longer than the configured timeout.
  */
 export class TimeoutError extends NetworkError {
-    constructor(
-        message: string = 'Request timed out',
-        code: string = 'timeout',
-        details?: Record<string, any>,
-    ) {
-        super(message, code, undefined, details);
+    constructor(message: string, httpStatus: number) {
+        super(message, httpStatus);
         Object.setPrototypeOf(this, TimeoutError.prototype);
     }
 }
@@ -42,12 +33,8 @@ export class TimeoutError extends NetworkError {
  * the RecallrAI API, such as DNS resolution issues or network unavailability.
  */
 export class ConnectionError extends NetworkError {
-    constructor(
-        message: string = 'Failed to connect to the RecallrAI API',
-        code: string = 'connection_error',
-        details?: Record<string, any>,
-    ) {
-        super(message, code, undefined, details);
+    constructor(message: string, httpStatus: number) {
+        super(message, httpStatus);
         Object.setPrototypeOf(this, ConnectionError.prototype);
     }
 }
