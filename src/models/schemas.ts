@@ -52,7 +52,6 @@ export const sessionListSchema = z.object({
  * Schema for context validation.
  */
 export const contextSchema = z.object({
-    memoryUsed: z.boolean(),
     context: z.string(),
 });
 

@@ -210,11 +210,6 @@ export class SessionList {
  */
 export class Context {
     /**
-     * Whether memory was used to generate the context
-     */
-    public memoryUsed: boolean;
-
-    /**
      * The context for the session
      */
     public context: string;
@@ -225,11 +220,9 @@ export class Context {
      * @param data - Context data
      */
     constructor(data: {
-        memoryUsed: boolean;
         context: string;
     }) {
         const validated = contextSchema.parse(data);
-        this.memoryUsed = validated.memoryUsed;
         this.context = validated.context;
     }
 
@@ -241,7 +234,6 @@ export class Context {
      */
     static fromApiResponse(data: any): Context {
         return new Context({
-            memoryUsed: data.memory_used,
             context: data.context,
         });
     }

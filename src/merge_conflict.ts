@@ -114,14 +114,26 @@ export class MergeConflict {
      * @throws {RecallrAIError} For other API-related errors.
      */
     async resolve(answers: MergeConflictAnswer[]): Promise<void> {
+        if (this.status === MergeConflictStatus.RESOLVED || this.status === MergeConflictStatus.FAILED) {
+            throw new MergeConflictAlreadyResolvedError(
+                `Merge conflict ${this.conflictId} is already resolved`,
+                400
+            );
+        }
+
+        // Convert answers to the format expected by the API
+        const answerData = {
+            question_answers: answers.map(answer => ({
+                question: answer.question,
+                answer: answer.answer,
+                message: answer.message,
+            }))
+        };
+
         try {
             const response = await this._http.post(
-                `/api/v1/users/${this.userId}/merge_conflicts/${this.conflictId}/resolve`,
-                { answers: answers.map(answer => ({
-                    question: answer.question,
-                    answer: answer.answer,
-                    message: answer.message,
-                })) }
+                `/api/v1/users/${this.userId}/merge-conflicts/${this.conflictId}/resolve`,
+                { answers: answerData }
             );
 
             if (response.status === 404) {
@@ -167,7 +179,7 @@ export class MergeConflict {
     async refresh(): Promise<void> {
         try {
             const response = await this._http.get(
-                `/api/v1/users/${this.userId}/merge_conflicts/${this.conflictId}`
+                `/api/v1/users/${this.userId}/merge-conflicts/${this.conflictId}`
             );
 
             if (response.status === 404) {

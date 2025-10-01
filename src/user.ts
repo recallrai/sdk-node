@@ -1,7 +1,7 @@
 import { HTTPClient } from './utils/http-client';
 import { UserModel, UserMemoriesList, UserMessagesList } from './models/user';
 import { Session } from './session';
-import { SessionList } from './models/session';
+import { SessionList, Session as SessionModel } from './models/session';
 import { MergeConflict } from './merge_conflict';
 import { 
     MergeConflictList,
@@ -66,11 +66,10 @@ export class User {
      * 
      * @param newMetadata New metadata to associate with the user
      * @param newUserId New ID for the user
-     * @returns The updated user object
      * @throws {UserNotFoundError} If the user is not found
      * @throws {UserAlreadyExistsError} If a user with the new_user_id already exists
      */
-    async update(newMetadata?: Record<string, any>, newUserId?: string): Promise<User> {
+    async update(newMetadata?: Record<string, any>, newUserId?: string): Promise<void> {
         const data: Record<string, any> = {};
 
         if (newMetadata !== undefined) {
@@ -90,8 +89,6 @@ export class User {
             this.userId = updatedData.userId;
             this.metadata = updatedData.metadata;
             this.lastActiveAt = updatedData.lastActiveAt;
-
-            return this;
         } catch (error: any) {
             if (error.status === 404) {
                 throw new UserNotFoundError(`User ${this.userId} not found`, error.status);
@@ -130,7 +127,8 @@ export class User {
     /**
      * Create a new session for this user.
      * 
-     * @param autoProcessAfterMinutes Minutes to wait before auto-processing (-1 to disable)
+     * @param autoProcessAfterSeconds Seconds of inactivity allowed before automatically processing the session (min 600)
+     * @param metadata Optional metadata for the session
      * @returns A Session object to interact with the created session
      * @throws {UserNotFoundError} If the user is not found
      */
@@ -138,7 +136,7 @@ export class User {
         try {
             const response = await this.http.post(
                 `/api/v1/users/${this.userId}/sessions`,
-                { auto_process_after_seconds: autoProcessAfterSeconds, metadata }
+                { auto_process_after_seconds: autoProcessAfterSeconds, metadata: metadata || {} }
             );
 
             if (response.status !== 201) {
@@ -148,8 +146,8 @@ export class User {
                 );
             }
 
-            const sessionId = response.data.session_id;
-            return new Session(this.http, this.userId, sessionId);
+            const sessionData = SessionModel.fromApiResponse(response.data);
+            return new Session(this.http, this.userId, sessionData);
         } catch (error: any) {
             if (error.status === 404) {
                 throw new UserNotFoundError(`User ${this.userId} not found`, error.status);
@@ -167,16 +165,29 @@ export class User {
      * @throws {SessionNotFoundError} If the session is not found
      */
     async getSession(sessionId: string): Promise<Session> {
-        // Verify the session exists by checking its status
-        const session = new Session(this.http, this.userId, sessionId);
         try {
-            await session.getStatus();  // This will raise appropriate errors if the session doesn't exist
-            return session;
-        } catch (error) {
-            if (error instanceof SessionNotFoundError) {
-                throw error;
+            const response = await this.http.get(`/api/v1/users/${this.userId}/sessions/${sessionId}`);
+
+            if (response.status !== 200) {
+                throw new RecallrAIError(
+                    'Failed to get session',
+                    response.status
+                );
             }
-            throw new RecallrAIError(`Error retrieving session: ${(error as Error).message}`, 500);
+
+            const sessionData = SessionModel.fromApiResponse(response.data);
+            return new Session(this.http, this.userId, sessionData);
+        } catch (error: any) {
+            if (error.status === 404) {
+                // Check if it's a user not found or session not found error
+                const detail = error.data?.detail || error.message || '';
+                if (detail.includes(`User ${this.userId} not found`)) {
+                    throw new UserNotFoundError(`User ${this.userId} not found`, error.status);
+                } else {
+                    throw new SessionNotFoundError(`Session ${sessionId} not found`, error.status);
+                }
+            }
+            throw error;
         }
     }
 
@@ -259,7 +270,7 @@ export class User {
             }
             
             const response = await this.http.get(
-                `/api/v1/users/${this.userId}/merge_conflicts`,
+                `/api/v1/users/${this.userId}/merge-conflicts`,
                 { params }
             );
             return MergeConflictList.fromApiResponse(response.data);
@@ -282,7 +293,7 @@ export class User {
     async getMergeConflict(conflictId: string): Promise<MergeConflict> {
         try {
             const response = await this.http.get(
-                `/api/v1/users/${this.userId}/merge_conflicts/${conflictId}`
+                `/api/v1/users/${this.userId}/merge-conflicts/${conflictId}`
             );
             const conflictData = MergeConflictModel.fromApiResponse(response.data);
             return new MergeConflict(this.http, this.userId, conflictData);
@@ -301,15 +312,23 @@ export class User {
     /**
      * Get the last N messages for this user across all sessions.
      * 
-     * @param n Number of messages to retrieve
+     * This method is useful for chatbot applications where you want to see
+     * the recent conversation history for context.
+     * 
+     * @param n Number of recent messages to retrieve (1-100, default: 10)
      * @throws {UserNotFoundError} If the user doesn't exist
      * @throws {RecallrAIError} For other API-related errors
+     * @throws {Error} If n is not between 1 and 100
      */
     async getLastNMessages(n: number): Promise<UserMessagesList> {
+        if (n < 1 || n > 100) {
+            throw new Error('n must be between 1 and 100');
+        }
+        
         try {
             const response = await this.http.get(
                 `/api/v1/users/${this.userId}/messages`,
-                { params: { n } }
+                { params: { limit: n } }
             );
             return UserMessagesList.fromApiResponse(response.data);
         } catch (error: any) {
