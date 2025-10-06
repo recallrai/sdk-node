@@ -26,8 +26,8 @@ export class HTTPClient {
             baseURL: baseUrl.replace(/\/$/, ''),
             timeout,
             headers: {
-                'X-Api-Key': apiKey,
-                'X-Project-Id': projectId,
+                'X-Recallr-Api-Key': apiKey,
+                'X-Recallr-Project-Id': projectId,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'User-Agent': `RecallrAI-Node-SDK/${pkg.version}`,
