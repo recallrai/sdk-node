@@ -1,6 +1,1 @@
-import { HTTPClient, HTTPClientOptions } from './http-client';
-
-export {
-    HTTPClient,
-    HTTPClientOptions
-};
+export { HTTPClient } from "./http-client";

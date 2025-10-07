@@ -2,335 +2,298 @@
  * Session management functionality for the RecallrAI SDK.
  */
 
-import { HTTPClient } from './utils/http-client';
-import { 
-    Context, 
-    MessageRole, 
-    SessionStatus, 
-    SessionMessagesList,
-    Session as SessionModel,
-    RecallStrategy
-} from './models/session';
-import {
-    UserNotFoundError,
-    SessionNotFoundError,
-    InvalidSessionStateError,
-    RecallrAIError
-} from './errors';
+import { HTTPClient } from "./utils";
+import { Context, SessionMessagesList, SessionModel, SessionStatus, MessageRole, RecallStrategy } from "./models";
+import { UserNotFoundError, SessionNotFoundError, InvalidSessionStateError, RecallrAIError } from "./errors";
 
 /**
  * Manages a conversation session with RecallrAI.
- * 
+ *
  * This class handles adding messages, retrieving context, and processing the session
  * to update the user's memory.
  */
 export class Session {
-    private _http: HTTPClient;
-    private _userId: string;
-    private _sessionData: SessionModel;
-    public sessionId: string;
-    public status: SessionStatus;
-    public createdAt: Date;
-    public metadata: Record<string, any>;
+	private http: HTTPClient;
+	private sessionData: SessionModel;
+	private _userId: string;
 
-    /**
-     * Initialize a session.
-     * 
-     * @param httpClient HTTP client for API communication
-     * @param userId ID of the user who owns this session
-     * @param sessionData Initial session data from the API
-     */
-    constructor(httpClient: HTTPClient, userId: string, sessionData: SessionModel) {
-        this._http = httpClient;
-        this._userId = userId;
-        this._sessionData = sessionData;
-        this.sessionId = sessionData.sessionId;
-        this.status = sessionData.status;
-        this.createdAt = sessionData.createdAt;
-        this.metadata = sessionData.metadata;
-    }
+	public sessionId: string;
+	public status: SessionStatus;
+	public createdAt: Date;
+	public metadata: Record<string, any>;
 
-    /**
-     * Internal helper to add a message to the session.
-     * 
-     * @param role Role of the message sender
-     * @param content Content of the message
-     * 
-     * @throws {UserNotFoundError} If the user is not found
-     * @throws {SessionNotFoundError} If the session is not found
-     * @throws {InvalidSessionStateError} If the session is already processed or processing
-     * @throws {AuthenticationError} If the API key or project ID is invalid
-     * @throws {InternalServerError} If the server encounters an error
-     * @throws {NetworkError} If there are network issues
-     * @throws {TimeoutError} If the request times out
-     * @throws {RecallrAIError} For other API-related errors
-     */
-    async addMessage(role: MessageRole, content: string): Promise<void> {
-        const response = await this._http.post(
-            `/api/v1/users/${this._userId}/sessions/${this.sessionId}/add-message`,
-            { message: content, role }
-        );
+	/**
+	 * Initialize a session.
+	 *
+	 * @param httpClient - HTTP client for API communication.
+	 * @param userId - ID of the user who owns this session.
+	 * @param sessionData - Initial session data from the API.
+	 */
+	constructor(httpClient: HTTPClient, userId: string, sessionData: SessionModel) {
+		this.http = httpClient;
+		this._userId = userId;
+		this.sessionData = sessionData;
+		this.sessionId = sessionData.sessionId;
+		this.status = sessionData.status;
+		this.createdAt = sessionData.createdAt;
+		this.metadata = sessionData.metadata;
+	}
 
-        if (response.status === 404) {
-            // Check if it's a user not found or session not found error
-            const detail = response.data?.detail || '';
-            if (detail.includes(`User ${this._userId} not found`)) {
-                throw new UserNotFoundError(detail, response.status);
-            } else {
-                throw new SessionNotFoundError(detail, response.status);
-            }
-        } else if (response.status === 400) {
-            const detail = response.data?.detail || `Cannot add message to session with status ${this.status}`;
-            throw new InvalidSessionStateError(detail, response.status);
-        } else if (response.status !== 200) {
-            throw new RecallrAIError(
-                response.data?.detail || 'Unknown error',
-                response.status
-            );
-        }
-    }
+	/**
+	 * Internal helper to add a message to the session.
+	 *
+	 * @param role - Role of the message sender.
+	 * @param content - Content of the message.
+	 * @throws {UserNotFoundError} If the user is not found.
+	 * @throws {SessionNotFoundError} If the session is not found.
+	 * @throws {InvalidSessionStateError} If the session is already processed or processing.
+	 * @throws {AuthenticationError} If the API key or project ID is invalid.
+	 * @throws {InternalServerError} If the server encounters an error.
+	 * @throws {NetworkError} If there are network issues.
+	 * @throws {TimeoutError} If the request times out.
+	 * @throws {RecallrAIError} For other API-related errors.
+	 */
+	async addMessage(role: MessageRole, content: string): Promise<void> {
+		const response = await this.http.post(`/api/v1/users/${this._userId}/sessions/${this.sessionId}/add-message`, { message: content, role });
 
-    /**
-     * Get the current context for this session.
-     * 
-     * @param recallStrategy The type of recall strategy to use
-     * @param minTopK Minimum number of memories to return
-     * @param maxTopK Maximum number of memories to return
-     * @param memoriesThreshold Similarity threshold for memories
-     * @param summariesThreshold Similarity threshold for summaries
-     * @param lastNMessages Number of last messages to include in context
-     * @param lastNSummaries Number of last summaries to include in context
-     * @param timezone Timezone for formatting timestamps (e.g., 'America/New_York'). undefined for UTC
-     * @param includeSystemPrompt Whether to include the default system prompt of Recallr AI. Defaults to true
-     * @returns Context information with the memory text and whether memory was used
-     * 
-     * @throws {UserNotFoundError} If the user is not found
-     * @throws {SessionNotFoundError} If the session is not found
-     * @throws {AuthenticationError} If the API key or project ID is invalid
-     * @throws {InternalServerError} If the server encounters an error
-     * @throws {NetworkError} If there are network issues
-     * @throws {TimeoutError} If the request times out
-     * @throws {RecallrAIError} For other API-related errors
-     */
-    async getContext(
-        recallStrategy: RecallStrategy = RecallStrategy.BALANCED,
-        minTopK: number = 15,
-        maxTopK: number = 50,
-        memoriesThreshold: number = 0.6,
-        summariesThreshold: number = 0.5,
-        lastNMessages?: number,
-        lastNSummaries?: number,
-        timezone?: string,
-        includeSystemPrompt: boolean = true
-    ): Promise<Context> {
-        const params: Record<string, any> = {
-            recall_strategy: recallStrategy,
-            min_top_k: minTopK,
-            max_top_k: maxTopK,
-            memories_threshold: memoriesThreshold,
-            summaries_threshold: summariesThreshold,
-            include_system_prompt: includeSystemPrompt
-        };
-        
-        if (lastNMessages !== undefined) {
-            params.last_n_messages = lastNMessages;
-        }
-        if (lastNSummaries !== undefined) {
-            params.last_n_summaries = lastNSummaries;
-        }
-        if (timezone !== undefined) {
-            params.timezone = timezone;
-        }
+		if (response.status === 404) {
+			const detail = response.data?.detail || "";
+			if (detail.includes(`User ${this._userId} not found`)) {
+				throw new UserNotFoundError(detail, response.status);
+			} else {
+				throw new SessionNotFoundError(detail, response.status);
+			}
+		} else if (response.status === 400) {
+			const detail = response.data?.detail || `Cannot add message to session with status ${this.status}`;
+			throw new InvalidSessionStateError(detail, response.status);
+		} else if (response.status !== 200) {
+			throw new RecallrAIError(response.data?.detail || "Unknown error", response.status);
+		}
+	}
 
-        const response = await this._http.get(
-            `/api/v1/users/${this._userId}/sessions/${this.sessionId}/context`,
-            { params }
-        );
+	/**
+	 * Get the current context for this session.
+	 *
+	 * @param options - Context retrieval options
+	 * @param options.recallStrategy - The type of recall strategy to use.
+	 * @param options.minTopK - Minimum number of memories to return.
+	 * @param options.maxTopK - Maximum number of memories to return.
+	 * @param options.memoriesThreshold - Similarity threshold for memories.
+	 * @param options.summariesThreshold - Similarity threshold for summaries.
+	 * @param options.lastNMessages - Number of last messages to include in context.
+	 * @param options.lastNSummaries - Number of last summaries to include in context.
+	 * @param options.timezone - Timezone for formatting timestamps (e.g., 'America/New_York'). None for UTC.
+	 * @param options.includeSystemPrompt - Whether to include the default system prompt of Recallr AI. Defaults to True.
+	 * @returns Context information with the memory text and whether memory was used.
+	 * @throws {UserNotFoundError} If the user is not found.
+	 * @throws {SessionNotFoundError} If the session is not found.
+	 * @throws {AuthenticationError} If the API key or project ID is invalid.
+	 * @throws {InternalServerError} If the server encounters an error.
+	 * @throws {NetworkError} If there are network issues.
+	 * @throws {TimeoutError} If the request times out.
+	 * @throws {RecallrAIError} For other API-related errors.
+	 */
+	async getContext(options?: {
+		recallStrategy?: RecallStrategy;
+		minTopK?: number;
+		maxTopK?: number;
+		memoriesThreshold?: number;
+		summariesThreshold?: number;
+		lastNMessages?: number;
+		lastNSummaries?: number;
+		timezone?: string;
+		includeSystemPrompt?: boolean;
+	}): Promise<Context> {
+		const params: Record<string, any> = {
+			recall_strategy: options?.recallStrategy || RecallStrategy.BALANCED,
+			min_top_k: options?.minTopK || 15,
+			max_top_k: options?.maxTopK || 50,
+			memories_threshold: options?.memoriesThreshold || 0.6,
+			summaries_threshold: options?.summariesThreshold || 0.5,
+			include_system_prompt: options?.includeSystemPrompt !== undefined ? options.includeSystemPrompt : true,
+		};
 
-        if (response.status === 404) {
-            // Check if it's a user not found or session not found error
-            const detail = response.data?.detail || '';
-            if (detail.includes(`User ${this._userId} not found`)) {
-                throw new UserNotFoundError(detail, response.status);
-            } else {
-                throw new SessionNotFoundError(detail, response.status);
-            }
-        } else if (response.status !== 200) {
-            throw new RecallrAIError(
-                response.data?.detail || 'Unknown error',
-                response.status
-            );
-        }
-        
-        if (this.status === SessionStatus.PROCESSED) {
-            console.warn("You are trying to get context for a processed session. Why do you need it?");
-        } else if (this.status === SessionStatus.PROCESSING) {
-            console.warn("You are trying to get context for a processing session. Why do you need it?");
-        }
+		if (options?.lastNMessages !== undefined) {
+			params.last_n_messages = options.lastNMessages;
+		}
+		if (options?.lastNSummaries !== undefined) {
+			params.last_n_summaries = options.lastNSummaries;
+		}
+		if (options?.timezone) {
+			params.timezone = options.timezone;
+		}
 
-        return Context.fromApiResponse(response.data);
-    }
+		const response = await this.http.get(`/api/v1/users/${this._userId}/sessions/${this.sessionId}/context`, params);
 
-    /**
-     * Update the session's metadata.
-     * 
-     * @param newMetadata New metadata to associate with the session
-     * 
-     * @throws {UserNotFoundError} If the user is not found
-     * @throws {SessionNotFoundError} If the session is not found
-     * @throws {AuthenticationError} If the API key or project ID is invalid
-     * @throws {InternalServerError} If the server encounters an error
-     * @throws {NetworkError} If there are network issues
-     * @throws {TimeoutError} If the request times out
-     * @throws {RecallrAIError} For other API-related errors
-     */
-    async update(newMetadata?: Record<string, any>): Promise<void> {
-        const response = await this._http.put(
-            `/api/v1/users/${this._userId}/sessions/${this.sessionId}`,
-            { new_metadata: newMetadata }
-        );
+		if (response.status === 404) {
+			const detail = response.data?.detail || "";
+			if (detail.includes(`User ${this._userId} not found`)) {
+				throw new UserNotFoundError(detail, response.status);
+			} else {
+				throw new SessionNotFoundError(detail, response.status);
+			}
+		} else if (response.status !== 200) {
+			throw new RecallrAIError(response.data?.detail || "Unknown error", response.status);
+		}
 
-        if (response.status === 404) {
-            // Check if it's a user not found or session not found error
-            const detail = response.data?.detail || '';
-            if (detail.includes(`User ${this._userId} not found`)) {
-                throw new UserNotFoundError(detail, response.status);
-            } else {
-                throw new SessionNotFoundError(detail, response.status);
-            }
-        } else if (response.status !== 200) {
-            throw new RecallrAIError(
-                response.data?.detail || 'Unknown error',
-                response.status
-            );
-        }
-        
-        const updatedData = SessionModel.fromApiResponse(response.data);
-        this.metadata = updatedData.metadata;
-    }
+		if (this.status === SessionStatus.PROCESSED) {
+			console.warn("You are trying to get context for a processed session. Why do you need it?");
+		} else if (this.status === SessionStatus.PROCESSING) {
+			console.warn("You are trying to get context for a processing session. Why do you need it?");
+		}
 
-    /**
-     * Refresh the session data from the API.
-     * 
-     * This method updates the local session data to reflect any changes
-     * that may have occurred on the server.
-     * 
-     * @throws {UserNotFoundError} If the user is not found
-     * @throws {SessionNotFoundError} If the session is not found
-     * @throws {AuthenticationError} If the API key or project ID is invalid
-     * @throws {InternalServerError} If the server encounters an error
-     * @throws {NetworkError} If there are network issues
-     * @throws {TimeoutError} If the request times out
-     * @throws {RecallrAIError} For other API-related errors
-     */
-    async refresh(): Promise<void> {
-        const response = await this._http.get(
-            `/api/v1/users/${this._userId}/sessions/${this.sessionId}`
-        );
-        
-        if (response.status === 404) {
-            // Check if it's a user not found or session not found error
-            const detail = response.data?.detail || '';
-            if (detail.includes(`User ${this._userId} not found`)) {
-                throw new UserNotFoundError(detail, response.status);
-            } else {
-                throw new SessionNotFoundError(detail, response.status);
-            }
-        } else if (response.status !== 200) {
-            throw new RecallrAIError(
-                response.data?.detail || 'Unknown error',
-                response.status
-            );
-        }
-        
-        this._sessionData = SessionModel.fromApiResponse(response.data);
-        this.status = this._sessionData.status;
-        this.createdAt = this._sessionData.createdAt;
-        this.metadata = this._sessionData.metadata;
-    }
+		return {
+			context: response.data.context,
+		};
+	}
 
-    /**
-     * Process the session to update the user's memory.
-     * 
-     * This method triggers the processing of the conversation to extract and update
-     * the user's memory.
-     * 
-     * @throws {UserNotFoundError} If the user is not found
-     * @throws {SessionNotFoundError} If the session is not found
-     * @throws {InvalidSessionStateError} If the session is already processed or being processed
-     * @throws {AuthenticationError} If the API key or project ID is invalid
-     * @throws {InternalServerError} If the server encounters an error
-     * @throws {NetworkError} If there are network issues
-     * @throws {TimeoutError} If the request times out
-     * @throws {RecallrAIError} For other API-related errors
-     */
-    async process(): Promise<void> {
-        const response = await this._http.post(
-            `/api/v1/users/${this._userId}/sessions/${this.sessionId}/process`
-        );
-        
-        if (response.status === 404) {
-            // Check if it's a user not found or session not found error
-            const detail = response.data?.detail || '';
-            if (detail.includes(`User ${this._userId} not found`)) {
-                throw new UserNotFoundError(detail, response.status);
-            } else {
-                throw new SessionNotFoundError(detail, response.status);
-            }
-        } else if (response.status === 400) {
-            const detail = response.data?.detail || `Cannot process session with status ${this.status}`;
-            throw new InvalidSessionStateError(detail, response.status);
-        } else if (response.status !== 200) {
-            throw new RecallrAIError(
-                response.data?.detail || 'Unknown error',
-                response.status
-            );
-        }
-    }
+	/**
+	 * Update the session's metadata.
+	 *
+	 * @param newMetadata - New metadata to associate with the session.
+	 * @throws {UserNotFoundError} If the user is not found.
+	 * @throws {SessionNotFoundError} If the session is not found.
+	 * @throws {AuthenticationError} If the API key or project ID is invalid.
+	 * @throws {InternalServerError} If the server encounters an error.
+	 * @throws {NetworkError} If there are network issues.
+	 * @throws {TimeoutError} If the request times out.
+	 * @throws {RecallrAIError} For other API-related errors.
+	 */
+	async update(newMetadata?: Record<string, any>): Promise<void> {
+		const response = await this.http.put(`/api/v1/users/${this._userId}/sessions/${this.sessionId}`, { new_metadata: newMetadata });
 
-    /**
-     * Get all messages in the session.
-     * 
-     * @param offset Number of records to skip
-     * @param limit Maximum number of records to return
-     * @returns Paginated list of messages in the session
-     * 
-     * @throws {UserNotFoundError} If the user is not found
-     * @throws {SessionNotFoundError} If the session is not found
-     * @throws {AuthenticationError} If the API key or project ID is invalid
-     * @throws {InternalServerError} If the server encounters an error
-     * @throws {NetworkError} If there are network issues
-     * @throws {TimeoutError} If the request times out
-     * @throws {RecallrAIError} For other API-related errors
-     */
-    async getMessages(offset: number = 0, limit: number = 50): Promise<SessionMessagesList> {
-        const response = await this._http.get(
-            `/api/v1/users/${this._userId}/sessions/${this.sessionId}/messages`,
-            { params: { offset, limit } }
-        );
-        
-        if (response.status === 404) {
-            // Check if it's a user not found or session not found error
-            const detail = response.data?.detail || '';
-            if (detail.includes(`User ${this._userId} not found`)) {
-                throw new UserNotFoundError(detail, response.status);
-            } else {
-                throw new SessionNotFoundError(detail, response.status);
-            }
-        } else if (response.status !== 200) {
-            throw new RecallrAIError(
-                response.data?.detail || 'Unknown error',
-                response.status
-            );
-        }
-        
-        return SessionMessagesList.fromApiResponse(response.data);
-    }
+		if (response.status === 404) {
+			const detail = response.data?.detail || "";
+			if (detail.includes(`User ${this._userId} not found`)) {
+				throw new UserNotFoundError(detail, response.status);
+			} else {
+				throw new SessionNotFoundError(detail, response.status);
+			}
+		} else if (response.status !== 200) {
+			throw new RecallrAIError(response.data?.detail || "Unknown error", response.status);
+		}
 
-    /**
-     * String representation of the session.
-     */
-    toString(): string {
-        return `<Session id=${this.sessionId} user_id=${this._userId} status=${this.status}>`;
-    }
+		const updatedData = this.parseSessionResponse(response.data);
+		this.metadata = updatedData.metadata;
+	}
+
+	/**
+	 * Refresh the session data from the API.
+	 *
+	 * This method updates the local session data to reflect any changes
+	 * that may have occurred on the server.
+	 *
+	 * @throws {UserNotFoundError} If the user is not found.
+	 * @throws {SessionNotFoundError} If the session is not found.
+	 * @throws {AuthenticationError} If the API key or project ID is invalid.
+	 * @throws {InternalServerError} If the server encounters an error.
+	 * @throws {NetworkError} If there are network issues.
+	 * @throws {TimeoutError} If the request times out.
+	 * @throws {RecallrAIError} For other API-related errors.
+	 */
+	async refresh(): Promise<void> {
+		const response = await this.http.get(`/api/v1/users/${this._userId}/sessions/${this.sessionId}`);
+
+		if (response.status === 404) {
+			const detail = response.data?.detail || "";
+			if (detail.includes(`User ${this._userId} not found`)) {
+				throw new UserNotFoundError(detail, response.status);
+			} else {
+				throw new SessionNotFoundError(detail, response.status);
+			}
+		} else if (response.status !== 200) {
+			throw new RecallrAIError(response.data?.detail || "Unknown error", response.status);
+		}
+
+		this.sessionData = this.parseSessionResponse(response.data);
+		this.status = this.sessionData.status;
+		this.createdAt = this.sessionData.createdAt;
+		this.metadata = this.sessionData.metadata;
+	}
+
+	/**
+	 * Process the session to update the user's memory.
+	 *
+	 * This method triggers the processing of the conversation to extract and update
+	 * the user's memory.
+	 *
+	 * @throws {UserNotFoundError} If the user is not found.
+	 * @throws {SessionNotFoundError} If the session is not found.
+	 * @throws {InvalidSessionStateError} If the session is already processed or being processed.
+	 * @throws {AuthenticationError} If the API key or project ID is invalid.
+	 * @throws {InternalServerError} If the server encounters an error.
+	 * @throws {NetworkError} If there are network issues.
+	 * @throws {TimeoutError} If the request times out.
+	 * @throws {RecallrAIError} For other API-related errors.
+	 */
+	async process(): Promise<void> {
+		const response = await this.http.post(`/api/v1/users/${this._userId}/sessions/${this.sessionId}/process`);
+
+		if (response.status === 404) {
+			const detail = response.data?.detail || "";
+			if (detail.includes(`User ${this._userId} not found`)) {
+				throw new UserNotFoundError(detail, response.status);
+			} else {
+				throw new SessionNotFoundError(detail, response.status);
+			}
+		} else if (response.status === 400) {
+			const detail = response.data?.detail || `Cannot process session with status ${this.status}`;
+			throw new InvalidSessionStateError(detail, response.status);
+		} else if (response.status !== 200) {
+			throw new RecallrAIError(response.data?.detail || "Unknown error", response.status);
+		}
+	}
+
+	/**
+	 * Get all messages in the session.
+	 *
+	 * @param offset - Number of records to skip.
+	 * @param limit - Maximum number of records to return.
+	 * @returns Paginated list of messages in the session.
+	 * @throws {UserNotFoundError} If the user is not found.
+	 * @throws {SessionNotFoundError} If the session is not found.
+	 * @throws {AuthenticationError} If the API key or project ID is invalid.
+	 * @throws {InternalServerError} If the server encounters an error.
+	 * @throws {NetworkError} If there are network issues.
+	 * @throws {TimeoutError} If the request times out.
+	 * @throws {RecallrAIError} For other API-related errors.
+	 */
+	async getMessages(offset: number = 0, limit: number = 50): Promise<SessionMessagesList> {
+		const response = await this.http.get(`/api/v1/users/${this._userId}/sessions/${this.sessionId}/messages`, { offset, limit });
+
+		if (response.status === 404) {
+			const detail = response.data?.detail || "";
+			if (detail.includes(`User ${this._userId} not found`)) {
+				throw new UserNotFoundError(detail, response.status);
+			} else {
+				throw new SessionNotFoundError(detail, response.status);
+			}
+		} else if (response.status !== 200) {
+			throw new RecallrAIError(response.data?.detail || "Unknown error", response.status);
+		}
+
+		return {
+			messages: response.data.messages.map((msg: any) => ({
+				role: msg.role as MessageRole,
+				content: msg.content,
+				timestamp: new Date(msg.timestamp),
+			})),
+			total: response.data.total,
+			hasMore: response.data.has_more,
+		};
+	}
+
+	private parseSessionResponse(data: any): SessionModel {
+		const sessionData = data.session || data;
+		return {
+			sessionId: sessionData.session_id,
+			status: sessionData.status as SessionStatus,
+			createdAt: new Date(sessionData.created_at),
+			metadata: sessionData.metadata,
+		};
+	}
+
+	toString(): string {
+		return `<Session id=${this.sessionId} user_id=${this._userId} status=${this.status}>`;
+	}
 }
