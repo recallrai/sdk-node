@@ -330,6 +330,7 @@ try {
     // - last_n_messages: Number of last messages to include in context (optional, range: 1-100)
     // - last_n_summaries: Number of last summaries to include in context (optional, range: 1-20)
     // - timezone: Timezone for formatting timestamps (optional, e.g., 'America/New_York', null for UTC)
+    // - includeSystemPrompt: Whether to include the default system prompt of Recallr AI (default: true)
 } catch (error) {
     if (error instanceof UserNotFoundError) {
         console.log(`Error: ${error.message}`);

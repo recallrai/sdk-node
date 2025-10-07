@@ -101,6 +101,7 @@ export class Session {
      * @param lastNMessages Number of last messages to include in context
      * @param lastNSummaries Number of last summaries to include in context
      * @param timezone Timezone for formatting timestamps (e.g., 'America/New_York'). undefined for UTC
+     * @param includeSystemPrompt Whether to include the default colorized system prompt. Defaults to true
      * @returns Context information with the memory text and whether memory was used
      * 
      * @throws {UserNotFoundError} If the user is not found
@@ -119,7 +120,8 @@ export class Session {
         summariesThreshold: number = 0.5,
         lastNMessages?: number,
         lastNSummaries?: number,
-        timezone?: string
+        timezone?: string,
+        includeSystemPrompt: boolean = true
     ): Promise<Context> {
         const params: Record<string, any> = {
             recall_strategy: recallStrategy,
@@ -127,6 +129,7 @@ export class Session {
             max_top_k: maxTopK,
             memories_threshold: memoriesThreshold,
             summaries_threshold: summariesThreshold,
+            include_system_prompt: includeSystemPrompt
         };
         
         if (lastNMessages !== undefined) {
