@@ -101,7 +101,7 @@ export class Session {
      * @param lastNMessages Number of last messages to include in context
      * @param lastNSummaries Number of last summaries to include in context
      * @param timezone Timezone for formatting timestamps (e.g., 'America/New_York'). undefined for UTC
-     * @param includeSystemPrompt Whether to include the default colorized system prompt. Defaults to true
+     * @param includeSystemPrompt Whether to include the default system prompt of Recallr AI. Defaults to true
      * @returns Context information with the memory text and whether memory was used
      * 
      * @throws {UserNotFoundError} If the user is not found
