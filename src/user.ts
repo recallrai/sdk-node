@@ -282,7 +282,7 @@ export class User {
             );
         }
         
-        return SessionList.fromApiResponse(response.data);
+        return SessionList.fromApiResponse(response.data, this.userId, this._http);
     }
 
     /**
@@ -393,7 +393,7 @@ export class User {
             );
         }
 
-        return MergeConflictList.fromApiResponse(response.data);
+        return MergeConflictList.fromApiResponse(response.data, this._http, this.userId);
     }
 
     /**

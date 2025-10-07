@@ -2,6 +2,8 @@
  * Merge conflict-related data models for the RecallrAI SDK.
  */
 
+import { HTTPClient } from '../utils/http-client';
+
 /**
  * Status of a merge conflict.
  */
@@ -206,9 +208,9 @@ export class MergeConflictModel {
  */
 export class MergeConflictList {
     /**
-     * List of merge conflicts.
+     * List of merge conflict instances (not just MergeConflictModel data).
      */
-    public conflicts: MergeConflictModel[];
+    public conflicts: any[]; // Will be MergeConflict[] once imported
 
     /**
      * Total number of merge conflicts.
@@ -221,7 +223,7 @@ export class MergeConflictList {
     public hasMore: boolean;
 
     constructor(data: {
-        conflicts: MergeConflictModel[];
+        conflicts: any[];
         total: number;
         hasMore: boolean;
     }) {
@@ -230,10 +232,21 @@ export class MergeConflictList {
         this.hasMore = data.hasMore;
     }
 
-    static fromApiResponse(data: any): MergeConflictList {
+    /**
+     * Create a MergeConflictList instance from an API response
+     * 
+     * @param data - API response data
+     * @param httpClient - HTTP client for creating MergeConflict instances
+     * @param userId - User ID who owns these conflicts
+     * @returns A MergeConflictList instance
+     */
+    static fromApiResponse(data: any, httpClient: HTTPClient, userId: string): MergeConflictList {
+        // Import MergeConflict class dynamically to avoid circular dependency
+        const { MergeConflict } = require('../merge_conflict');
+        
         return new MergeConflictList({
             conflicts: data.conflicts.map((conflict: any) =>
-                MergeConflictModel.fromApiResponse(conflict)
+                new MergeConflict(httpClient, userId, MergeConflictModel.fromApiResponse(conflict))
             ),
             total: data.total,
             hasMore: data.has_more,

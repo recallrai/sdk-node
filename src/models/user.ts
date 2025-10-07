@@ -1,4 +1,5 @@
 import { userSchema, userListSchema, userMemoriesListSchema } from './schemas';
+import { HTTPClient } from '../utils/http-client';
 
 /**
  * Represents a user in the RecallrAI system.
@@ -64,9 +65,9 @@ export class UserModel {
  */
 export class UserList {
     /**
-     * List of users
+     * List of user instances (not just UserModel data)
      */
-    public users: UserModel[];
+    public users: any[]; // Will be User[] once User is imported
 
     /**
      * Total number of users
@@ -84,25 +85,30 @@ export class UserList {
      * @param data - User list data
      */
     constructor(data: {
-        users: UserModel[];
+        users: any[];
         total: number;
         hasMore: boolean;
     }) {
-        const validated = userListSchema.parse(data);
-        this.users = validated.users;
-        this.total = validated.total;
-        this.hasMore = validated.hasMore;
+        this.users = data.users;
+        this.total = data.total;
+        this.hasMore = data.hasMore;
     }
 
     /**
      * Create a UserList instance from an API response
      * 
      * @param data - API response data
+     * @param httpClient - HTTP client for creating User instances
      * @returns A UserList instance
      */
-    static fromApiResponse(data: any): UserList {
+    static fromApiResponse(data: any, httpClient: HTTPClient): UserList {
+        // Import User class dynamically to avoid circular dependency
+        const { User } = require('../user');
+        
         return new UserList({
-            users: data.users.map((user: any) => UserModel.fromApiResponse({ user })),
+            users: data.users.map((user: any) => 
+                new User(httpClient, UserModel.fromApiResponse({ user }))
+            ),
             total: data.total,
             hasMore: data.has_more,
         });
@@ -110,11 +116,50 @@ export class UserList {
 }
 
 
+/**
+ * Information about a specific version of a memory.
+ */
+export interface MemoryVersionInfo {
+    version_number: number;
+    content: string;
+    created_at: string; // ISO string
+    expired_at: string; // ISO string
+    expiration_reason: string;
+}
+
+/**
+ * Connected memory information.
+ */
+export interface MemoryRelationship {
+    memory_id: string;
+    content: string;
+}
+
+/**
+ * Complete memory information with all metadata.
+ */
 export interface UserMemoryItem {
     memory_id: string;
     categories: string[];
     content: string;
     created_at: string; // ISO string
+    
+    // Version information
+    version_number: number;
+    total_versions: number;
+    has_previous_versions: boolean;
+    
+    // Version history (only if requested)
+    previous_versions?: MemoryVersionInfo[];
+    
+    // Relationships (only if requested)
+    connected_memories?: MemoryRelationship[];
+    
+    // Merge conflict info
+    merge_conflict_in_progress: boolean;
+    
+    // Session info
+    session_id: string;
 }
 
 export class UserMemoriesList {
@@ -127,14 +172,9 @@ export class UserMemoriesList {
         total: number; 
         hasMore: boolean 
     }) {
-        const validated = userMemoriesListSchema.parse({
-            items: data.items,
-            total: data.total,
-            has_more: data.hasMore,
-        });
-        this.items = validated.items;
-        this.total = validated.total;
-        this.hasMore = validated.has_more;
+        this.items = data.items;
+        this.total = data.total;
+        this.hasMore = data.hasMore;
     }
 
     static fromApiResponse(data: any): UserMemoriesList {

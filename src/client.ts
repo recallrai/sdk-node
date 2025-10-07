@@ -146,6 +146,6 @@ export class RecallrAI {
             throw new RecallrAIError(detail, response.status);
         }
         
-        return UserList.fromApiResponse(response.data);
+        return UserList.fromApiResponse(response.data, this._http);
     }
 }

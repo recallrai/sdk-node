@@ -5,6 +5,7 @@ import {
     contextSchema,
     sessionMessagesListSchema
 } from './schemas';
+import { HTTPClient } from '../utils/http-client';
 
 /**
  * Message role in a conversation.
@@ -21,6 +22,7 @@ export enum SessionStatus {
     PENDING = 'pending',
     PROCESSING = 'processing',
     PROCESSED = 'processed',
+    INSUFFICIENT_BALANCE = 'insufficient_balance',
 }
 
 /**
@@ -133,6 +135,7 @@ export class Session {
             case 'pending': return SessionStatus.PENDING;
             case 'processing': return SessionStatus.PROCESSING;
             case 'processed': return SessionStatus.PROCESSED;
+            case 'insufficient_balance': return SessionStatus.INSUFFICIENT_BALANCE;
             default: return SessionStatus.PENDING;
         }
     }
@@ -158,9 +161,9 @@ export class Session {
  */
 export class SessionList {
     /**
-     * List of sessions
+     * List of session instances (not just Session model data)
      */
-    public sessions: Session[];
+    public sessions: any[]; // Will be Session[] from session.ts once imported
 
     /**
      * Total number of sessions
@@ -178,27 +181,31 @@ export class SessionList {
      * @param data - Session list data
      */
     constructor(data: {
-        sessions: Session[];
+        sessions: any[];
         total: number;
         hasMore: boolean;
     }) {
-        // We'll validate separately to avoid type issues
-        const { total, hasMore } = sessionListSchema.parse(data);
-        
         this.sessions = data.sessions;
-        this.total = total;
-        this.hasMore = hasMore;
+        this.total = data.total;
+        this.hasMore = data.hasMore;
     }
 
     /**
      * Create a SessionList instance from an API response
      * 
      * @param data - API response data
+     * @param userId - User ID who owns the sessions
+     * @param httpClient - HTTP client for creating Session instances
      * @returns A SessionList instance
      */
-    static fromApiResponse(data: any): SessionList {
+    static fromApiResponse(data: any, userId: string, httpClient: HTTPClient): SessionList {
+        // Import Session class dynamically to avoid circular dependency
+        const { Session: SessionClass } = require('../session');
+        
         return new SessionList({
-            sessions: data.sessions.map((session: any) => Session.fromApiResponse(session)),
+            sessions: data.sessions.map((session: any) => 
+                new SessionClass(httpClient, userId, Session.fromApiResponse(session))
+            ),
             total: data.total,
             hasMore: data.has_more,
         });
