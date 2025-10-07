@@ -76,9 +76,9 @@ export class MergeConflict {
     /**
      * Initialize a merge conflict.
      *
-     * @param httpClient - HTTP client for API communication.
-     * @param userId - User ID who owns this conflict.
-     * @param conflictData - Merge conflict data model.
+     * @param httpClient HTTP client for API communication
+     * @param userId User ID who owns this conflict
+     * @param conflictData Merge conflict data model
      */
     constructor(
         httpClient: HTTPClient,
@@ -101,17 +101,22 @@ export class MergeConflict {
     }
 
     /**
-     * Resolve a merge conflict by providing answers to clarifying questions.
+     * Resolve this merge conflict by providing answers to clarifying questions.
      *
-     * @param answers - List of answers to the clarifying questions.
+     * @param answers List of answers to the clarifying questions
      * 
-     * @throws {UserNotFoundError} If the user doesn't exist.
-     * @throws {MergeConflictNotFoundError} If the merge conflict doesn't exist.
-     * @throws {MergeConflictAlreadyResolvedError} If the conflict is already resolved.
-     * @throws {MergeConflictInvalidQuestionsError} If the provided questions don't match.
-     * @throws {MergeConflictMissingAnswersError} If not all questions are answered.
-     * @throws {MergeConflictInvalidAnswerError} If an answer is not a valid option.
-     * @throws {RecallrAIError} For other API-related errors.
+     * @throws {UserNotFoundError} If the user is not found
+     * @throws {MergeConflictNotFoundError} If the merge conflict is not found
+     * @throws {MergeConflictAlreadyResolvedError} If the conflict is already resolved
+     * @throws {MergeConflictInvalidQuestionsError} If the provided questions don't match the original questions
+     * @throws {MergeConflictMissingAnswersError} If not all required questions have been answered
+     * @throws {MergeConflictInvalidAnswerError} If an answer is not a valid option for its question
+     * @throws {ValidationError} If the answers are invalid
+     * @throws {AuthenticationError} If the API key or project ID is invalid
+     * @throws {InternalServerError} If the server encounters an error
+     * @throws {NetworkError} If there are network issues
+     * @throws {TimeoutError} If the request times out
+     * @throws {RecallrAIError} For other API-related errors
      */
     async resolve(answers: MergeConflictAnswer[]): Promise<void> {
         if (this.status === MergeConflictStatus.RESOLVED || this.status === MergeConflictStatus.FAILED) {
@@ -130,91 +135,90 @@ export class MergeConflict {
             }))
         };
 
-        try {
-            const response = await this._http.post(
-                `/api/v1/users/${this.userId}/merge-conflicts/${this.conflictId}/resolve`,
-                { answers: answerData }
+        const response = await this._http.post(
+            `/api/v1/users/${this.userId}/merge-conflicts/${this.conflictId}/resolve`,
+            { answers: answerData }
+        );
+
+        if (response.status === 404) {
+            // Check if it's a user not found or conflict not found error
+            const detail = response.data?.detail || '';
+            if (detail.includes(`User ${this.userId} not found`)) {
+                throw new UserNotFoundError(detail, response.status);
+            } else {
+                throw new MergeConflictNotFoundError(detail, response.status);
+            }
+        } else if (response.status === 400) {
+            const detail = response.data?.detail || '';
+            if (detail.includes("already resolved")) {
+                throw new MergeConflictAlreadyResolvedError(detail, response.status);
+            } else if (detail.includes("Invalid questions provided")) {
+                throw new MergeConflictInvalidQuestionsError(detail, response.status);
+            } else if (detail.includes("Missing answers for the following questions")) {
+                throw new MergeConflictMissingAnswersError(detail, response.status);
+            } else if (detail.includes("Invalid answer") && detail.includes("for question")) {
+                throw new MergeConflictInvalidAnswerError(detail, response.status);
+            } else {
+                throw new RecallrAIError(detail, response.status);
+            }
+        } else if (response.status !== 200) {
+            throw new RecallrAIError(
+                response.data?.detail || 'Unknown error',
+                response.status
             );
-
-            if (response.status === 404) {
-                if (response.data?.error?.includes('User')) {
-                    throw new UserNotFoundError(response.data.error, response.status);
-                } else {
-                    throw new MergeConflictNotFoundError(response.data?.error || 'Merge conflict not found', response.status);
-                }
-            } else if (response.status === 409) {
-                throw new MergeConflictAlreadyResolvedError(response.data?.error || 'Merge conflict already resolved', response.status);
-            } else if (response.status === 422) {
-                const errorMessage = response.data?.error || 'Validation error';
-                if (errorMessage.includes('questions')) {
-                    throw new MergeConflictInvalidQuestionsError(errorMessage, response.status);
-                } else if (errorMessage.includes('missing') || errorMessage.includes('required')) {
-                    throw new MergeConflictMissingAnswersError(errorMessage, response.status);
-                } else if (errorMessage.includes('invalid') && errorMessage.includes('answer')) {
-                    throw new MergeConflictInvalidAnswerError(errorMessage, response.status);
-                } else {
-                    throw new RecallrAIError(errorMessage, response.status);
-                }
-            } else if (response.status >= 400) {
-                throw new RecallrAIError(response.data?.error || 'Failed to resolve merge conflict', response.status);
-            }
-
-            // Refresh conflict data after successful resolution
-            await this.refresh();
-        } catch (error: any) {
-            if (error instanceof RecallrAIError) {
-                throw error;
-            }
-            throw new RecallrAIError(`Failed to resolve merge conflict: ${error.message}`, 500);
         }
+
+        // Update the conflict data with the response
+        const updatedData = MergeConflictModel.fromApiResponse(response.data);
+        this._conflictData = updatedData;
+        this.status = updatedData.status;
+        this.resolvedAt = updatedData.resolvedAt;
+        this.resolutionData = updatedData.resolutionData;
     }
 
     /**
-     * Refresh the merge conflict data from the API.
+     * Refresh this merge conflict's data from the API.
      * 
-     * @throws {UserNotFoundError} If the user doesn't exist.
-     * @throws {MergeConflictNotFoundError} If the merge conflict doesn't exist.
-     * @throws {RecallrAIError} For other API-related errors.
+     * @throws {UserNotFoundError} If the user is not found
+     * @throws {MergeConflictNotFoundError} If the merge conflict is not found
+     * @throws {AuthenticationError} If the API key or project ID is invalid
+     * @throws {InternalServerError} If the server encounters an error
+     * @throws {NetworkError} If there are network issues
+     * @throws {TimeoutError} If the request times out
+     * @throws {RecallrAIError} For other API-related errors
      */
     async refresh(): Promise<void> {
-        try {
-            const response = await this._http.get(
-                `/api/v1/users/${this.userId}/merge-conflicts/${this.conflictId}`
+        const response = await this._http.get(
+            `/api/v1/users/${this.userId}/merge-conflicts/${this.conflictId}`
+        );
+
+        if (response.status === 404) {
+            // Check if it's a user not found or conflict not found error
+            const detail = response.data?.detail || '';
+            if (detail.includes(`User ${this.userId} not found`)) {
+                throw new UserNotFoundError(detail, response.status);
+            } else {
+                throw new MergeConflictNotFoundError(detail, response.status);
+            }
+        } else if (response.status !== 200) {
+            throw new RecallrAIError(
+                response.data?.detail || 'Unknown error',
+                response.status
             );
-
-            if (response.status === 404) {
-                if (response.data?.error?.includes('User')) {
-                    throw new UserNotFoundError(response.data.error, response.status);
-                } else {
-                    throw new MergeConflictNotFoundError(response.data?.error || 'Merge conflict not found', response.status);
-                }
-            } else if (response.status >= 400) {
-                throw new RecallrAIError(response.data?.error || 'Failed to refresh merge conflict', response.status);
-            }
-
-            // Update conflict data
-            this._conflictData = MergeConflictModel.fromApiResponse(response.data);
-            
-            // Update exposed properties
-            this.status = this._conflictData.status;
-            this.newMemoryContent = this._conflictData.newMemoryContent;
-            this.conflictingMemories = this._conflictData.conflictingMemories;
-            this.clarifyingQuestions = this._conflictData.clarifyingQuestions;
-            this.createdAt = this._conflictData.createdAt;
-            this.resolvedAt = this._conflictData.resolvedAt;
-            this.resolutionData = this._conflictData.resolutionData;
-        } catch (error: any) {
-            if (error instanceof RecallrAIError) {
-                throw error;
-            }
-            throw new RecallrAIError(`Failed to refresh merge conflict: ${error.message}`, 500);
         }
+
+        // Update with fresh data
+        const updatedData = MergeConflictModel.fromApiResponse(response.data);
+        this._conflictData = updatedData;
+        this.status = updatedData.status;
+        this.resolvedAt = updatedData.resolvedAt;
+        this.resolutionData = updatedData.resolutionData;
     }
 
     /**
      * String representation of the merge conflict.
      */
     toString(): string {
-        return `MergeConflict(id=${this.conflictId}, status=${this.status}, user_id=${this.userId})`;
+        return `MergeConflict(id='${this.conflictId}', status='${this.status}', user_id='${this.userId}')`;
     }
 }

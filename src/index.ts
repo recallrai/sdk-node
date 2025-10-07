@@ -15,5 +15,9 @@ export { RecallrAI, User, Session, MergeConflict };
 import pkg from '../package.json';
 export const version = pkg.version;
 
+// Export all types and models
+export * from './models';
+export * from './errors';
+
 // Default export is the RecallrAI client
 export default RecallrAI;

@@ -25,7 +25,7 @@ const client = new RecallrAI({
     apiKey: "rai_yourapikey",
     projectId: "project-uuid",
     baseUrl: "https://api.recallrai.com",  // custom endpoint if applicable
-    timeout: 60000,  // milliseconds
+    timeout: 30000,  // milliseconds (default: 30000)
 });
 ```
 
@@ -236,18 +236,19 @@ try {
 ### List Sessions
 
 ```typescript
-import { UserNotFoundError } from 'recallrai';
+import { UserNotFoundError, SessionStatus } from 'recallrai';
 
 try {
     // First, get the user
     const user = await client.getUser("user123");
     
-    // List sessions for this user with optional metadata filters
+    // List sessions for this user with optional filters
     const sessionList = await user.listSessions(
         0,  // offset
         10,  // limit
-        { type: "chat" },  // metadata_filter (optional)
-        { role: "admin" }   // user_metadata_filter (optional)
+        { type: "chat" },           // metadata_filter (optional)
+        { role: "admin" },          // user_metadata_filter (optional)
+        [SessionStatus.PENDING, SessionStatus.PROCESSING]  // status_filter (optional)
     );
     console.log(`Total sessions: ${sessionList.total}`);
     console.log(`Has more sessions: ${sessionList.hasMore}`);
@@ -387,20 +388,53 @@ import { UserNotFoundError, InvalidCategoriesError } from 'recallrai';
 
 try {
     const user = await client.getUser("user123");
+    
+    // List memories with all available options
     const memories = await user.listMemories(
         0,  // offset
-        20,  // limit
-        ["food_preferences", "allergies"]  // categories (optional)
+        20,  // limit (max 200)
+        ["food_preferences", "allergies"],  // categories (optional)
+        true,  // include_previous_versions (default: true)
+        true   // include_connected_memories (default: true)
     );
+    
     for (const mem of memories.items) {
         console.log(`Memory ID: ${mem.memory_id}`);
         console.log(`Categories: ${mem.categories}`);
         console.log(`Content: ${mem.content}`);
         console.log(`Created at: ${mem.created_at}`);
+        console.log(`Session ID: ${mem.session_id}`);
+        
+        // Version information
+        console.log(`Version: ${mem.version_number} of ${mem.total_versions}`);
+        console.log(`Has previous versions: ${mem.has_previous_versions}`);
+        
+        // Previous versions (if included)
+        if (mem.previous_versions) {
+            console.log(`Previous versions: ${mem.previous_versions.length}`);
+            for (const version of mem.previous_versions) {
+                console.log(`  - Version ${version.version_number}: ${version.content}`);
+                console.log(`    Created: ${version.created_at}, Expired: ${version.expired_at}`);
+                console.log(`    Expiration reason: ${version.expiration_reason}`);
+            }
+        }
+        
+        // Connected memories (if included)
+        if (mem.connected_memories) {
+            console.log(`Connected memories: ${mem.connected_memories.length}`);
+            for (const connected of mem.connected_memories) {
+                console.log(`  - ${connected.memory_id}: ${connected.content}`);
+            }
+        }
+        
+        // Merge conflict status
+        console.log(`Merge conflict in progress: ${mem.merge_conflict_in_progress}`);
         console.log("---");
     }
+    
     console.log(`Has more?: ${memories.hasMore}`);
     console.log(`Total memories: ${memories.total}`);
+    
 } catch (error) {
     if (error instanceof UserNotFoundError) {
         console.log(`Error: ${error.message}`);
@@ -409,6 +443,29 @@ try {
     }
 }
 ```
+
+#### Memory Item Fields
+
+Each memory item returned contains the following information:
+
+- **memory_id**: Unique identifier for the current/latest version of the memory
+- **categories**: List of category strings the memory belongs to
+- **content**: The current version's content text
+- **created_at**: Timestamp when the latest version was created
+- **session_id**: ID of the session that created this version
+- **version_number**: Which version this is (e.g., 3 means this is the 3rd version)
+- **total_versions**: Total number of versions that exist for this memory
+- **has_previous_versions**: Boolean indicating if `total_versions > 1`
+- **previous_versions** (optional): List of `MemoryVersionInfo` objects containing:
+  - `version_number`: Sequential version number (1 = oldest)
+  - `content`: Content of that version
+  - `created_at`: When this version was created
+  - `expired_at`: When this version expired
+  - `expiration_reason`: Why it expired (e.g., new version created)
+- **connected_memories** (optional): List of `MemoryRelationship` objects containing:
+  - `memory_id`: ID of the connected memory
+  - `content`: Brief content for context
+- **merge_conflict_in_progress**: Boolean indicating if this memory has an active merge conflict
 
 ## User Messages
 
@@ -615,9 +672,142 @@ const pendingConflicts = await user.listMergeConflicts(0, 10, MergeConflictStatu
 const resolvedConflicts = await user.listMergeConflicts(0, 10, MergeConflictStatus.RESOLVED);
 ```
 
-## Error Handling
+## Example Usage with LLMs
 
-The SDK provides comprehensive error handling with specific exception classes for different types of failures:
+```typescript
+import { RecallrAI, MessageRole } from 'recallrai';
+import { UserNotFoundError, SessionNotFoundError } from 'recallrai';
+import OpenAI from 'openai';
+import * as readline from 'readline';
+
+// Initialize the clients
+const raiClient = new RecallrAI({
+  apiKey: 'rai_yourapikey',
+  projectId: 'your-project-uuid'
+});
+const oaiClient = new OpenAI({ apiKey: 'your-openai-api-key' });
+
+// Create a readline interface for user input
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+// Helper function to ask questions
+function askQuestion(question: string): Promise<string> {
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      resolve(answer);
+    });
+  });
+}
+
+async function chatWithMemory(userId: string, sessionId?: string): Promise<string> {
+  let user;
+  let session;
+  
+  // Get or create user
+  try {
+    user = await raiClient.getUser(userId);
+  } catch (error) {
+    if (error instanceof UserNotFoundError) {
+      user = await raiClient.createUser(userId);
+    } else {
+      throw error;
+    }
+  }
+  
+  // Create a new session or get an existing one
+  if (sessionId) {
+    try {
+      session = await user.getSession(sessionId);
+    } catch (error) {
+      if (error instanceof SessionNotFoundError) {
+        console.log(`Session ${sessionId} not found. Creating a new session.`);
+        session = await user.createSession(1800);
+      } else {
+        throw error;
+      }
+    }
+  } else {
+    session = await user.createSession(1800);
+    console.log(`Created new session: ${session.sessionId}`);
+  }
+  
+  console.log("Chat session started. Type 'exit' to end the conversation.");
+  
+  while (true) {
+    // Get user input
+    const userMessage = await askQuestion("You: ");
+    if (userMessage.toLowerCase() === 'exit') {
+      break;
+    }
+    
+    // Add the user message to RecallrAI
+    await session.addMessage(MessageRole.USER, userMessage);
+    
+    // Get context from RecallrAI after adding the user message
+    const context = await session.getContext();
+    
+    // Create a system prompt that includes the context
+    const systemPrompt = `You are a helpful assistant with memory of previous conversations.
+    
+MEMORIES ABOUT THE USER:
+${context.context}
+
+You can use the above memories to provide better responses to the user.
+Don't mention that you have access to memories unless you are explicitly asked.`;
+    
+    // Get previous messages
+    const messagesData = await session.getMessages();
+    const formattedMessages = messagesData.messages.map(message => ({
+      role: message.role,
+      content: message.content
+    }));
+
+    // Call the LLM with the system prompt and conversation history
+    const response = await oaiClient.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...formattedMessages,
+      ],
+      temperature: 0.7
+    });
+    
+    const assistantMessage = response.choices[0].message.content || "";
+    
+    // Print the assistant's response
+    console.log(`Assistant: ${assistantMessage}`);
+    
+    // Add the assistant's response to RecallrAI
+    await session.addMessage(MessageRole.ASSISTANT, assistantMessage);
+  }
+  
+  // Process the session at the end of the conversation
+  console.log("Processing session to update memory...");
+  await session.process();
+  console.log(`Session ended. Session ID: ${session.sessionId}`);
+  rl.close();
+  return session.sessionId;
+}
+
+// Example usage
+(async () => {
+  try {
+    const userId = "user123";
+    // To continue a previous session, uncomment below and provide the session ID
+    // const previousSessionId = "previously-saved-session-uuid";
+    // const sessionId = await chatWithMemory(userId, previousSessionId);
+    
+    // Start a new session
+    const sessionId = await chatWithMemory(userId);
+    console.log(`To continue this conversation later, use session ID: ${sessionId}`);
+  } catch (error) {
+    console.error("Error:", error);
+  }
+})();
+```
 
 ### Authentication Errors
 
@@ -810,6 +1000,30 @@ try {
 }
 ```
 
+## Error Handling
+
+The SDK provides comprehensive error handling with specific exception classes for different types of failures:
+
+### Base Exception Class
+
+All exceptions inherit from the base `RecallrAIError` class:
+
+```typescript
+import { RecallrAIError } from 'recallrai';
+
+try {
+    // Any SDK operation
+    const user = await client.getUser("user123");
+} catch (error) {
+    if (error instanceof RecallrAIError) {
+        console.log(`RecallrAI error: ${error.message}`);
+        console.log(`HTTP status: ${error.httpStatus}`);
+    } else {
+        console.log(`Unexpected error: ${error}`);
+    }
+}
+```
+
 ## Advanced Usage
 
 ### Custom Configuration
@@ -821,7 +1035,7 @@ const client = new RecallrAI({
     apiKey: "rai_yourapikey",
     projectId: "project-uuid",
     baseUrl: "https://api.recallrai.com",  // Custom API endpoint
-    timeout: 30000,  // 30 second timeout (default: 60000)
+    timeout: 30000,  // 30 second timeout (default: 30000)
 });
 ```
 
@@ -1059,232 +1273,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Note**: This SDK is in active development. Please check the [changelog](CHANGELOG.md) for updates and breaking changes.
 
-## Example Usage with LLMs
-
-```typescript
-import { RecallrAI, User, Session } from 'recallrai';
-import OpenAI from 'openai';
-import { UserNotFoundError, SessionNotFoundError } from 'recallrai/errors';
-import * as readline from 'readline';
-
-// Initialize the clients
-const raiClient = new RecallrAI({
-  apiKey: 'rai_yourapikey',
-  projectId: 'your-project-uuid'
-});
-const oaiClient = new OpenAI({ apiKey: 'your-openai-api-key' });
-
-// Create a readline interface for user input
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-// Helper function to ask questions
-function askQuestion(question: string): Promise<string> {
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      resolve(answer);
-    });
-  });
-}
-
-async function chatWithMemory(userId: string, sessionId?: string): Promise<string> {
-  let user: User;
-  let session: Session;
-  
-  // Get or create user
-  try {
-    user = await raiClient.getUser(userId);
-  } catch (error) {
-    if (error instanceof UserNotFoundError) {
-      user = await raiClient.createUser(userId);
-    } else {
-      throw error;
-    }
-  }
-  
-  // Create a new session or get an existing one
-  if (sessionId) {
-    try {
-      session = await user.getSession(sessionId);
-    } catch (error) {
-      if (error instanceof SessionNotFoundError) {
-        console.log(`Session ${sessionId} not found. Creating a new session.`);
-        session = await user.createSession(30);
-      } else {
-        throw error;
-      }
-    }
-  } else {
-    session = await user.createSession(30);
-    console.log(`Created new session: ${session.sessionId}`);
-  }
-  
-  console.log("Chat session started. Type 'exit' to end the conversation.");
-  
-  while (true) {
-    // Get user input
-    const userMessage = await askQuestion("You: ");
-    if (userMessage.toLowerCase() === 'exit') {
-      break;
-    }
-    
-    // Add the user message to RecallrAI
-    await session.addUserMessage(userMessage);
-    
-    // Get context from RecallrAI after adding the user message
-    const context = await session.getContext();
-    
-    // Create a system prompt that includes the context
-    const systemPrompt = `You are a helpful assistant with memory of previous conversations.
-    
-    MEMORIES ABOUT THE USER:
-    ${context.context}
-    
-    You can use the above memories to provide better responses to the user.
-    Don't mention that you have access to memories unless you are explicitly asked.`;
-    
-    // Get previous messages
-    const previousMessages = await session.getMessages();
-    const formattedMessages = previousMessages.map(message => ({
-      role: message.role,
-      content: message.content
-    }));
-
-    // Call the LLM with the system prompt and conversation history
-    const response = await oaiClient.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...formattedMessages,
-      ],
-      temperature: 0.7
-    });
-    
-    const assistantMessage = response.choices[0].message.content;
-    
-    // Print the assistant's response
-    console.log(`Assistant: ${assistantMessage}`);
-    
-    // Add the assistant's response to RecallrAI
-    await session.addAssistantMessage(assistantMessage);
-  }
-  
-  // Process the session at the end of the conversation
-  console.log("Processing session to update memory...");
-  await session.process();
-  console.log(`Session ended. Session ID: ${session.sessionId}`);
-  rl.close();
-  return session.sessionId;
-}
-
-// Example usage
-(async () => {
-  try {
-    const userId = "user123";
-    // To continue a previous session, uncomment below and provide the session ID
-    // const previousSessionId = "previously-saved-session-uuid";
-    // const sessionId = await chatWithMemory(userId, previousSessionId);
-    
-    // Start a new session
-    const sessionId = await chatWithMemory(userId);
-    console.log(`To continue this conversation later, use session ID: ${sessionId}`);
-  } catch (error) {
-    console.error("Error:", error);
-  }
-})();
-```
-
-## Exception Handling
-
-The RecallrAI SDK implements a comprehensive exception hierarchy to help you handle different error scenarios gracefully:
-
-### Base Exception
-
-- **RecallrAIError**: The base exception for all SDK-specific errors. All other exceptions inherit from this.
-
-### Authentication Errors
-
-- **AuthenticationError**: Raised when there's an issue with your API key or project ID authentication.
-
-### Network-Related Errors
-
-- **NetworkError**: Base exception for all network-related issues.
-- **TimeoutError**: Occurs when a request takes too long to complete.
-- **ConnectionError**: Happens when the SDK cannot establish a connection to the RecallrAI API.
-
-### Server Errors
-
-- **ServerError**: Base class for server-side errors.
-- **InternalServerError**: Raised when the RecallrAI API returns a 5xx error code.
-
-### User-Related Errors
-
-- **UserError**: Base for all user-related exceptions.
-- **UserNotFoundError**: Raised when attempting to access a user that doesn't exist.
-- **UserAlreadyExistsError**: Occurs when creating a user with an ID that already exists.
-
-### Session-Related Errors
-
-- **SessionError**: Base for all session-related exceptions.
-- **SessionNotFoundError**: Raised when attempting to access a non-existent session.
-- **InvalidSessionStateError**: Occurs when performing an operation that's not valid for the current session state (e.g., adding a message to a processed session).
-
-### Input Validation Errors
-
-- **ValidationError**: Raised when provided data doesn't meet the required format or constraints.
-
-### Importing Exceptions
-
-You can import exceptions directly from the `recallrai/errors` module:
-
-```typescript
-// Import specific exceptions
-import { UserNotFoundError, SessionNotFoundError } from 'recallrai/errors';
-
-// Import all exceptions
-import * as errors from 'recallrai/errors';
-```
-
-### Best Practices for Error Handling
-
-When implementing error handling with the RecallrAI SDK, consider these best practices:
-
-1. **Handle specific exceptions first**: Catch more specific exceptions before general ones.
-
-   ```typescript
-   try {
-     // SDK operation
-   } catch (error) {
-     if (error instanceof UserNotFoundError) {
-       // Specific handling
-     } else if (error instanceof RecallrAIError) {
-       // General fallback
-     } else {
-       // Unexpected errors
-     }
-   }
-   ```
-
-2. **Implement retry logic for transient errors**: Network and timeout errors might be temporary.
-
-3. **Log detailed error information**: Exceptions contain useful information for debugging.
-
-4. **Handle common user flows**: For example, check if a user exists before operations, or create them if they don't:
-
-   ```typescript
-   try {
-     const user = await client.getUser(userId);
-   } catch (error) {
-     if (error instanceof UserNotFoundError) {
-       const user = await client.createUser(userId);
-     }
-   }
-   ```
-
-For more detailed information on specific exceptions, refer to the API documentation.
-
 ## Conclusion
 
-This README outlines the basic usage of the RecallrAI SDK functions for user and session management. For additional documentation and advanced usage, please see the [official documentation](https://recallrai.com) or the source code repository on [GitHub](https://github.com/recallrai/sdk-node).
+This README outlines the usage of the RecallrAI Node.js SDK for user and session management, memory operations, and merge conflict resolution. For additional documentation and advanced usage, please see the [official documentation](https://docs.recallrai.com) or the source code repository on [GitHub](https://github.com/recallrai/sdk-node).
