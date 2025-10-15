@@ -260,12 +260,14 @@ export class User {
 	}
 
 	/**
-	 * List memories for this user with optional category filters.
+	 * List memories for this user with optional category and session filters.
 	 *
 	 * @param options - Listing options
 	 * @param options.offset - Number of records to skip.
 	 * @param options.limit - Maximum number of records to return (1-200).
 	 * @param options.categories - Optional list of category names to filter by.
+	 * @param options.sessionIdFilter - Optional list of session IDs to filter by.
+	 * @param options.sessionMetadataFilter - Optional object to filter by session metadata (exact match on keys -> values).
 	 * @param options.includePreviousVersions - Include full version history for each memory (default: True).
 	 * @param options.includeConnectedMemories - Include connected memories (default: True).
 	 * @returns UserMemoriesList: Paginated list of memory items.
@@ -280,6 +282,8 @@ export class User {
 		offset?: number;
 		limit?: number;
 		categories?: string[];
+		sessionIdFilter?: string[];
+		sessionMetadataFilter?: Record<string, any>;
 		includePreviousVersions?: boolean;
 		includeConnectedMemories?: boolean;
 	}): Promise<UserMemoriesList> {
@@ -292,6 +296,12 @@ export class User {
 
 		if (options?.categories) {
 			params.categories = options.categories;
+		}
+		if (options?.sessionIdFilter) {
+			params.session_id_filter = options.sessionIdFilter;
+		}
+		if (options?.sessionMetadataFilter) {
+			params.session_metadata_filter = JSON.stringify(options.sessionMetadataFilter);
 		}
 
 		const response = await this.http.get(`/api/v1/users/${this.userId}/memories`, params);

@@ -357,6 +357,8 @@ try {
 
 	const memories = await user.listMemories({
 		categories: ["food_preferences", "allergies"],
+		sessionIdFilter: ["session-uuid-1", "session-uuid-2"], // optional: filter by specific sessions
+		sessionMetadataFilter: { environment: "production" }, // optional: filter by session metadata
 		offset: 0,
 		limit: 20,
 		includePreviousVersions: true,
