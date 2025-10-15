@@ -216,7 +216,6 @@ export class User {
 	 * @param options.offset - Number of records to skip.
 	 * @param options.limit - Maximum number of records to return.
 	 * @param options.metadataFilter - Optional metadata filter for sessions.
-	 * @param options.userMetadataFilter - Optional metadata filter for the user.
 	 * @param options.statusFilter - Optional list of session statuses to filter by (e.g., ["pending", "processing", "processed", "insufficient_balance"]).
 	 * @returns List of sessions with pagination info.
 	 * @throws {UserNotFoundError} If the user is not found.
@@ -230,7 +229,6 @@ export class User {
 		offset?: number;
 		limit?: number;
 		metadataFilter?: Record<string, any>;
-		userMetadataFilter?: Record<string, any>;
 		statusFilter?: SessionStatus[];
 	}): Promise<{ sessions: Session[]; total: number; hasMore: boolean }> {
 		const params: Record<string, any> = {
@@ -240,9 +238,6 @@ export class User {
 
 		if (options?.metadataFilter) {
 			params.metadata_filter = JSON.stringify(options.metadataFilter);
-		}
-		if (options?.userMetadataFilter) {
-			params.user_metadata_filter = JSON.stringify(options.userMetadataFilter);
 		}
 		if (options?.statusFilter) {
 			params.status_filter = options.statusFilter;

@@ -237,7 +237,6 @@ try {
 		offset: 0,
 		limit: 10,
 		metadataFilter: { type: "chat" },
-		userMetadataFilter: { role: "admin" },
 		statusFilter: [SessionStatus.PENDING, SessionStatus.PROCESSING],
 	});
 
