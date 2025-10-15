@@ -19,6 +19,7 @@ export enum SessionStatus {
 	PENDING = "pending",
 	PROCESSING = "processing",
 	PROCESSED = "processed",
+	FAILED = "failed",
 	INSUFFICIENT_BALANCE = "insufficient_balance",
 }
 
