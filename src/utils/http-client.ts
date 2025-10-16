@@ -35,8 +35,8 @@ export class HTTPClient {
 				"X-Recallr-Api-Key": this.apiKey,
 				"X-Recallr-Project-Id": this.projectId,
 				"Content-Type": "application/json",
-				Accept: "application/json",
-				"User-Agent": "RecallrAI-Node-SDK/0.3.1",
+				"Accept": "application/json",
+				"User-Agent": "RecallrAI-Node-SDK/0.4.0",
 			},
 		});
 	}
