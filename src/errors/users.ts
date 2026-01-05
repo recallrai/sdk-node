@@ -25,9 +25,12 @@ export class UserAlreadyExistsError extends UserError {
 }
 
 export class InvalidCategoriesError extends UserError {
-	constructor(message: string, httpStatus: number) {
+	public invalidCategories: string[];
+
+	constructor(message: string, httpStatus: number, invalidCategories: string[]) {
 		super(message, httpStatus);
 		this.name = "InvalidCategoriesError";
+		this.invalidCategories = invalidCategories;
 		Object.setPrototypeOf(this, InvalidCategoriesError.prototype);
 	}
 }

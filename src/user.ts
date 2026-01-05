@@ -310,8 +310,10 @@ export class User {
 			const detail = response.data?.detail || `User ${this.userId} not found`;
 			throw new UserNotFoundError(detail, response.status);
 		} else if (response.status === 400) {
-			const detail = response.data?.detail || "Invalid categories provided";
-			throw new InvalidCategoriesError(detail, response.status);
+			const detailData = response.data?.detail;
+			let message: string = detailData.message;
+			let invalidCats: string[] = detailData.invalid_categories;
+			throw new InvalidCategoriesError(message, response.status, invalidCats);
 		} else if (response.status !== 200) {
 			throw new RecallrAIError(response.data?.detail || "Unknown error", response.status);
 		}
