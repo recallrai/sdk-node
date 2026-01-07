@@ -82,7 +82,7 @@ export class Session {
 	 * @param options.summariesThreshold - Similarity threshold for summaries.
 	 * @param options.lastNMessages - Number of last messages to include in context.
 	 * @param options.lastNSummaries - Number of last summaries to include in context.
-	 * @param options.timezone - Timezone for formatting timestamps (e.g., 'America/New_York'). None for UTC.
+	 * @param options.timezone - Timezone for formatting timestamps (e.g., 'America/New_York'). Defaults to UTC.
 	 * @param options.includeSystemPrompt - Whether to include the default system prompt of Recallr AI. Defaults to True.
 	 * @returns Context information with the memory text and whether memory was used.
 	 * @throws {UserNotFoundError} If the user is not found.
@@ -101,6 +101,7 @@ export class Session {
 		summariesThreshold?: number;
 		lastNMessages?: number;
 		lastNSummaries?: number;
+		timezone?: string;
 		includeSystemPrompt?: boolean;
 	}): Promise<Context> {
 		const params: Record<string, any> = {
@@ -117,6 +118,9 @@ export class Session {
 		}
 		if (options?.lastNSummaries !== undefined) {
 			params.last_n_summaries = options.lastNSummaries;
+		}
+		if (options?.timezone !== undefined) {
+			params.timezone = options.timezone;
 		}
 
 		const response = await this.http.get(`/api/v1/users/${this._userId}/sessions/${this.sessionId}/context`, params);

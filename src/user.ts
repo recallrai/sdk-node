@@ -151,6 +151,7 @@ export class User {
 	 * @param options - Session creation options
 	 * @param options.autoProcessAfterSeconds - Seconds of inactivity allowed before automatically processing the session (min 600).
 	 * @param options.metadata - Optional metadata for the session.
+	 * @param options.customCreatedAtUtc - Optional custom timestamp for when the session was created (must be UTC). Useful for importing historical data.
 	 * @returns A Session object to interact with the created session.
 	 * @throws {UserNotFoundError} If the user is not found.
 	 * @throws {AuthenticationError} If the API key or project ID is invalid.
@@ -159,11 +160,19 @@ export class User {
 	 * @throws {TimeoutError} If the request times out.
 	 * @throws {RecallrAIError} For other API-related errors.
 	 */
-	async createSession(options?: { autoProcessAfterSeconds?: number; metadata?: Record<string, any> }): Promise<Session> {
+	async createSession(options?: {
+		autoProcessAfterSeconds?: number;
+		metadata?: Record<string, any>;
+		customCreatedAtUtc?: Date;
+	}): Promise<Session> {
 		const payload: Record<string, any> = {
 			auto_process_after_seconds: options?.autoProcessAfterSeconds || 600,
 			metadata: options?.metadata || {},
 		};
+
+		if (options?.customCreatedAtUtc) {
+			payload.custom_created_at_utc = options.customCreatedAtUtc.toISOString();
+		}
 
 		const response = await this.http.post(`/api/v1/users/${this.userId}/sessions`, payload);
 
