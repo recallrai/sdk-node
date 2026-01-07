@@ -101,7 +101,6 @@ export class Session {
 		summariesThreshold?: number;
 		lastNMessages?: number;
 		lastNSummaries?: number;
-		timezone?: string;
 		includeSystemPrompt?: boolean;
 	}): Promise<Context> {
 		const params: Record<string, any> = {
@@ -118,9 +117,6 @@ export class Session {
 		}
 		if (options?.lastNSummaries !== undefined) {
 			params.last_n_summaries = options.lastNSummaries;
-		}
-		if (options?.timezone) {
-			params.timezone = options.timezone;
 		}
 
 		const response = await this.http.get(`/api/v1/users/${this._userId}/sessions/${this.sessionId}/context`, params);
