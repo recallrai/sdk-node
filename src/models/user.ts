@@ -8,6 +8,8 @@ export interface UserModel {
 export interface MemoryVersionInfo {
 	versionNumber: number;
 	content: string;
+	eventDateStart: Date;
+	eventDateEnd: Date;
 	createdAt: Date;
 	expiredAt: Date;
 	expirationReason: string;
@@ -22,6 +24,8 @@ export interface UserMemoryItem {
 	memoryId: string;
 	categories: string[];
 	content: string;
+	eventDateStart: Date;
+	eventDateEnd: Date;
 	createdAt: Date;
 	versionNumber: number;
 	totalVersions: number;
