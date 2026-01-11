@@ -158,7 +158,6 @@ export class MergeConflict {
 
 		return {
 			id: conflictData.id,
-			customUserId: conflictData.custom_user_id,
 			projectUserSessionId: conflictData.project_user_session_id,
 			newMemoryContent: conflictData.new_memory_content,
 			conflictingMemories: conflictData.conflicting_memories.map((mem: any) => ({

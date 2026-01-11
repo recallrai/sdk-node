@@ -24,7 +24,6 @@ export interface MergeConflictAnswer {
 
 export interface MergeConflictModel {
 	id: string;
-	customUserId: string;
 	projectUserSessionId: string;
 	newMemoryContent: string;
 	conflictingMemories: MergeConflictMemory[];
