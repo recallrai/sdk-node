@@ -3,7 +3,7 @@
  */
 
 import { HTTPClient } from "./utils";
-import { MergeConflictModel, MergeConflictStatus, MergeConflictAnswer, MergeConflictMemory, MergeConflictQuestion } from "./models";
+import { MergeConflictModel, MergeConflictStatus, MergeConflictAnswer, MergeConflictConflictingMemory, MergeConflictNewMemory, MergeConflictQuestion } from "./models";
 import {
 	UserNotFoundError,
 	MergeConflictNotFoundError,
@@ -27,8 +27,9 @@ export class MergeConflict {
 	public readonly userId: string;
 	public conflictId: string;
 	public status: MergeConflictStatus;
-	public newMemoryContent: string;
-	public conflictingMemories: MergeConflictMemory[];
+	public newMemoryContent?: string;
+	public newMemories?: MergeConflictNewMemory[];
+	public conflictingMemories: MergeConflictConflictingMemory[];
 	public clarifyingQuestions: MergeConflictQuestion[];
 	public createdAt: Date;
 	public resolvedAt?: Date;
@@ -49,6 +50,7 @@ export class MergeConflict {
 		this.conflictId = conflictData.id;
 		this.status = conflictData.status;
 		this.newMemoryContent = conflictData.newMemoryContent;
+		this.newMemories = conflictData.newMemories;
 		this.conflictingMemories = conflictData.conflictingMemories;
 		this.clarifyingQuestions = conflictData.clarifyingQuestions;
 		this.createdAt = conflictData.createdAt;
@@ -160,9 +162,20 @@ export class MergeConflict {
 			id: conflictData.id,
 			projectUserSessionId: conflictData.project_user_session_id,
 			newMemoryContent: conflictData.new_memory_content,
+			newMemories: conflictData.new_memories?.map((mem: any) => ({
+				memoryId: mem.memory_id,
+				content: mem.content,
+				eventDateStart: new Date(mem.event_date_start),
+				eventDateEnd: new Date(mem.event_date_end),
+				createdAt: new Date(mem.created_at),
+			})),
 			conflictingMemories: conflictData.conflicting_memories.map((mem: any) => ({
+				memoryId: mem.memory_id,
 				content: mem.content,
 				reason: mem.reason,
+				eventDateStart: new Date(mem.event_date_start),
+				eventDateEnd: new Date(mem.event_date_end),
+				createdAt: new Date(mem.created_at),
 			})),
 			clarifyingQuestions: conflictData.clarifying_questions.map((q: any) => ({
 				question: q.question,

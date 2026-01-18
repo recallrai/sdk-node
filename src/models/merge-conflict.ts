@@ -6,9 +6,21 @@ export enum MergeConflictStatus {
 	FAILED = "FAILED",
 }
 
-export interface MergeConflictMemory {
+export interface MergeConflictConflictingMemory {
+	memoryId: string;
 	content: string;
 	reason: string;
+	eventDateStart: Date;
+	eventDateEnd: Date;
+	createdAt: Date;
+}
+
+export interface MergeConflictNewMemory {
+	memoryId: string;
+	content: string;
+	eventDateStart: Date;
+	eventDateEnd: Date;
+	createdAt: Date;
 }
 
 export interface MergeConflictQuestion {
@@ -25,8 +37,9 @@ export interface MergeConflictAnswer {
 export interface MergeConflictModel {
 	id: string;
 	projectUserSessionId: string;
-	newMemoryContent: string;
-	conflictingMemories: MergeConflictMemory[];
+	newMemoryContent?: string;
+	newMemories?: MergeConflictNewMemory[];
+	conflictingMemories: MergeConflictConflictingMemory[];
 	clarifyingQuestions: MergeConflictQuestion[];
 	status: MergeConflictStatus;
 	resolutionData?: Record<string, any>;
