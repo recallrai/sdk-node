@@ -33,7 +33,7 @@ export interface SessionModel {
 export enum RecallStrategy {
 	LOW_LATENCY = "low_latency",
 	BALANCED = "balanced",
-	DEEP = "deep",
+	AGENTIC = "agentic",
 }
 
 export interface Context {
