@@ -34,6 +34,7 @@ export enum RecallStrategy {
 	LOW_LATENCY = "low_latency",
 	BALANCED = "balanced",
 	AGENTIC = "agentic",
+	AUTO = "auto",
 }
 
 export interface Context {
