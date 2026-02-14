@@ -20,18 +20,17 @@ export class RecallrAI {
 	/**
 	 * Initialize the RecallrAI client.
 	 *
-	 * @param options - Configuration options
-	 * @param options.apiKey - Your RecallrAI API key.
-	 * @param options.projectId - Your project ID.
-	 * @param options.baseUrl - The base URL for the RecallrAI API.
-	 * @param options.timeout - Request timeout in seconds.
+	 * @param apiKey - Your RecallrAI API key. Must start with `rai_`.
+	 * @param projectId - Your project ID.
+	 * @param baseUrl - The base URL for the RecallrAI API. Defaults to `https://api.recallrai.com`.
+	 * @param timeout - Request timeout in seconds. Defaults to `30`.
 	 */
-	constructor(options: { apiKey: string; projectId: string; baseUrl?: string; timeout?: number }) {
-		if (!options.apiKey.startsWith("rai_")) {
+	constructor({ apiKey, projectId, baseUrl = "https://api.recallrai.com", timeout = 30 }: { apiKey: string; projectId: string; baseUrl?: string; timeout?: number }) {
+		if (!apiKey.startsWith("rai_")) {
 			throw new Error("API key must start with 'rai_'");
 		}
 
-		this.http = new HTTPClient(options.apiKey, options.projectId, options.baseUrl || "https://api.recallrai.com", options.timeout || 30);
+		this.http = new HTTPClient(apiKey, projectId, baseUrl, timeout);
 	}
 
 	/**
@@ -95,10 +94,9 @@ export class RecallrAI {
 	/**
 	 * List users with pagination.
 	 *
-	 * @param options - Listing options
-	 * @param options.offset - Number of records to skip.
-	 * @param options.limit - Maximum number of records to return.
-	 * @param options.metadataFilter - Optional metadata filter for users.
+	 * @param offset - Number of records to skip. Defaults to 0.
+	 * @param limit - Maximum number of records to return. Defaults to 10.
+	 * @param metadataFilter - Optional metadata filter for users.
 	 * @returns List of users with pagination info.
 	 * @throws {AuthenticationError} If the API key or project ID is invalid.
 	 * @throws {InternalServerError} If the server encounters an error.
@@ -106,18 +104,22 @@ export class RecallrAI {
 	 * @throws {TimeoutError} If the request times out.
 	 * @throws {RecallrAIError} For other API-related errors.
 	 */
-	async listUsers(options?: {
+	async listUsers({
+		offset = 0,
+		limit = 10,
+		metadataFilter,
+	}: {
 		offset?: number;
 		limit?: number;
 		metadataFilter?: Record<string, any>;
-	}): Promise<{ users: User[]; total: number; hasMore: boolean }> {
+	} = {}): Promise<{ users: User[]; total: number; hasMore: boolean }> {
 		const params: Record<string, any> = {
-			offset: options?.offset || 0,
-			limit: options?.limit || 10,
+			offset,
+			limit,
 		};
 
-		if (options?.metadataFilter) {
-			params.metadata_filter = JSON.stringify(options.metadataFilter);
+		if (metadataFilter) {
+			params.metadata_filter = JSON.stringify(metadataFilter);
 		}
 
 		const response = await this.http.get("/api/v1/users", params);

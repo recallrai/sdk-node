@@ -57,9 +57,8 @@ export class User {
 	/**
 	 * Update this user's metadata or ID.
 	 *
-	 * @param options - Update options
-	 * @param options.newMetadata - New metadata to associate with the user.
-	 * @param options.newUserId - New ID for the user.
+	 * @param newMetadata - New metadata to associate with the user.
+	 * @param newUserId - New ID for the user.
 	 * @throws {UserNotFoundError} If the user is not found.
 	 * @throws {UserAlreadyExistsError} If a user with the new_user_id already exists.
 	 * @throws {AuthenticationError} If the API key or project ID is invalid.
@@ -68,13 +67,19 @@ export class User {
 	 * @throws {TimeoutError} If the request times out.
 	 * @throws {RecallrAIError} For other API-related errors.
 	 */
-	async update(options?: { newMetadata?: Record<string, any>; newUserId?: string }): Promise<void> {
+	async update({
+		newMetadata,
+		newUserId,
+	}: {
+		newMetadata?: Record<string, any>;
+		newUserId?: string;
+	} = {}): Promise<void> {
 		const data: Record<string, any> = {};
-		if (options?.newMetadata !== undefined) {
-			data.new_metadata = options.newMetadata;
+		if (newMetadata !== undefined) {
+			data.new_metadata = newMetadata;
 		}
-		if (options?.newUserId !== undefined) {
-			data.new_user_id = options.newUserId;
+		if (newUserId !== undefined) {
+			data.new_user_id = newUserId;
 		}
 
 		const response = await this.http.put(`/api/v1/users/${this.userId}`, data);
@@ -83,7 +88,7 @@ export class User {
 			const detail = response.data?.detail || `User with ID ${this.userId} not found`;
 			throw new UserNotFoundError(detail, response.status);
 		} else if (response.status === 409) {
-			const detail = response.data?.detail || `User with ID ${options?.newUserId} already exists`;
+			const detail = response.data?.detail || `User with ID ${newUserId} already exists`;
 			throw new UserAlreadyExistsError(detail, response.status);
 		} else if (response.status !== 200) {
 			throw new RecallrAIError(response.data?.detail || "Unknown error", response.status);
@@ -148,10 +153,9 @@ export class User {
 	/**
 	 * Create a new session for this user.
 	 *
-	 * @param options - Session creation options
-	 * @param options.autoProcessAfterSeconds - Seconds of inactivity allowed before automatically processing the session (min 600).
-	 * @param options.metadata - Optional metadata for the session.
-	 * @param options.customCreatedAtUtc - Optional custom timestamp for when the session was created (must be UTC). Useful for importing historical data.
+	 * @param autoProcessAfterSeconds - Seconds of inactivity allowed before automatically processing the session (min 600). Defaults to 600.
+	 * @param metadata - Optional metadata for the session.
+	 * @param customCreatedAtUtc - Optional custom timestamp for when the session was created (must be UTC). Useful for importing historical data.
 	 * @returns A Session object to interact with the created session.
 	 * @throws {UserNotFoundError} If the user is not found.
 	 * @throws {AuthenticationError} If the API key or project ID is invalid.
@@ -160,18 +164,22 @@ export class User {
 	 * @throws {TimeoutError} If the request times out.
 	 * @throws {RecallrAIError} For other API-related errors.
 	 */
-	async createSession(options?: {
+	async createSession({
+		autoProcessAfterSeconds = 600,
+		metadata,
+		customCreatedAtUtc,
+	}: {
 		autoProcessAfterSeconds?: number;
 		metadata?: Record<string, any>;
 		customCreatedAtUtc?: Date;
-	}): Promise<Session> {
+	} = {}): Promise<Session> {
 		const payload: Record<string, any> = {
-			auto_process_after_seconds: options?.autoProcessAfterSeconds || 600,
-			metadata: options?.metadata || {},
+			auto_process_after_seconds: autoProcessAfterSeconds,
+			metadata: metadata || {},
 		};
 
-		if (options?.customCreatedAtUtc) {
-			payload.custom_created_at_utc = options.customCreatedAtUtc.toISOString();
+		if (customCreatedAtUtc) {
+			payload.custom_created_at_utc = customCreatedAtUtc.toISOString();
 		}
 
 		const response = await this.http.post(`/api/v1/users/${this.userId}/sessions`, payload);
@@ -221,11 +229,10 @@ export class User {
 	/**
 	 * List sessions for this user with pagination.
 	 *
-	 * @param options - Listing options
-	 * @param options.offset - Number of records to skip.
-	 * @param options.limit - Maximum number of records to return.
-	 * @param options.metadataFilter - Optional metadata filter for sessions.
-	 * @param options.statusFilter - Optional list of session statuses to filter by (e.g., ["pending", "processing", "processed", "insufficient_balance"]).
+	 * @param offset - Number of records to skip. Defaults to 0.
+	 * @param limit - Maximum number of records to return. Defaults to 10.
+	 * @param metadataFilter - Optional metadata filter for sessions.
+	 * @param statusFilter - Optional list of session statuses to filter by (e.g., ["pending", "processing", "processed", "insufficient_balance"]).
 	 * @returns List of sessions with pagination info.
 	 * @throws {UserNotFoundError} If the user is not found.
 	 * @throws {AuthenticationError} If the API key or project ID is invalid.
@@ -234,22 +241,27 @@ export class User {
 	 * @throws {TimeoutError} If the request times out.
 	 * @throws {RecallrAIError} For other API-related errors.
 	 */
-	async listSessions(options?: {
+	async listSessions({
+		offset = 0,
+		limit = 10,
+		metadataFilter,
+		statusFilter,
+	}: {
 		offset?: number;
 		limit?: number;
 		metadataFilter?: Record<string, any>;
 		statusFilter?: SessionStatus[];
-	}): Promise<{ sessions: Session[]; total: number; hasMore: boolean }> {
+	} = {}): Promise<{ sessions: Session[]; total: number; hasMore: boolean }> {
 		const params: Record<string, any> = {
-			offset: options?.offset || 0,
-			limit: options?.limit || 10,
+			offset,
+			limit,
 		};
 
-		if (options?.metadataFilter) {
-			params.metadata_filter = JSON.stringify(options.metadataFilter);
+		if (metadataFilter) {
+			params.metadata_filter = JSON.stringify(metadataFilter);
 		}
-		if (options?.statusFilter) {
-			params.status_filter = options.statusFilter;
+		if (statusFilter) {
+			params.status_filter = statusFilter;
 		}
 
 		const response = await this.http.get(`/api/v1/users/${this.userId}/sessions`, params);
@@ -271,14 +283,13 @@ export class User {
 	/**
 	 * List memories for this user with optional category and session filters.
 	 *
-	 * @param options - Listing options
-	 * @param options.offset - Number of records to skip.
-	 * @param options.limit - Maximum number of records to return (1-200).
-	 * @param options.categories - Optional list of category names to filter by.
-	 * @param options.sessionIdFilter - Optional list of session IDs to filter by.
-	 * @param options.sessionMetadataFilter - Optional object to filter by session metadata (exact match on keys -> values).
-	 * @param options.includePreviousVersions - Include full version history for each memory (default: True).
-	 * @param options.includeConnectedMemories - Include connected memories (default: True).
+	 * @param offset - Number of records to skip. Defaults to 0.
+	 * @param limit - Maximum number of records to return (1-200). Defaults to 20.
+	 * @param categories - Optional list of category names to filter by.
+	 * @param sessionIdFilter - Optional list of session IDs to filter by.
+	 * @param sessionMetadataFilter - Optional object to filter by session metadata (exact match on keys -> values).
+	 * @param includePreviousVersions - Include full version history for each memory. Defaults to true.
+	 * @param includeConnectedMemories - Include connected memories. Defaults to true.
 	 * @returns UserMemoriesList: Paginated list of memory items.
 	 * @throws {UserNotFoundError} If the user is not found.
 	 * @throws {AuthenticationError} If the API key or project ID is invalid.
@@ -287,7 +298,15 @@ export class User {
 	 * @throws {TimeoutError} If the request times out.
 	 * @throws {RecallrAIError} For other API-related errors.
 	 */
-	async listMemories(options?: {
+	async listMemories({
+		offset = 0,
+		limit = 20,
+		categories,
+		sessionIdFilter,
+		sessionMetadataFilter,
+		includePreviousVersions = true,
+		includeConnectedMemories = true,
+	}: {
 		offset?: number;
 		limit?: number;
 		categories?: string[];
@@ -295,22 +314,22 @@ export class User {
 		sessionMetadataFilter?: Record<string, any>;
 		includePreviousVersions?: boolean;
 		includeConnectedMemories?: boolean;
-	}): Promise<UserMemoriesList> {
+	} = {}): Promise<UserMemoriesList> {
 		const params: Record<string, any> = {
-			offset: options?.offset || 0,
-			limit: options?.limit || 20,
-			include_previous_versions: options?.includePreviousVersions !== undefined ? options.includePreviousVersions : true,
-			include_connected_memories: options?.includeConnectedMemories !== undefined ? options.includeConnectedMemories : true,
+			offset,
+			limit,
+			include_previous_versions: includePreviousVersions,
+			include_connected_memories: includeConnectedMemories,
 		};
 
-		if (options?.categories) {
-			params.categories = options.categories;
+		if (categories) {
+			params.categories = categories;
 		}
-		if (options?.sessionIdFilter) {
-			params.session_id_filter = options.sessionIdFilter;
+		if (sessionIdFilter) {
+			params.session_id_filter = sessionIdFilter;
 		}
-		if (options?.sessionMetadataFilter) {
-			params.session_metadata_filter = JSON.stringify(options.sessionMetadataFilter);
+		if (sessionMetadataFilter) {
+			params.session_metadata_filter = JSON.stringify(sessionMetadataFilter);
 		}
 
 		const response = await this.http.get(`/api/v1/users/${this.userId}/memories`, params);
@@ -337,12 +356,11 @@ export class User {
 	/**
 	 * List merge conflicts for this user.
 	 *
-	 * @param options - Listing options
-	 * @param options.offset - Number of records to skip.
-	 * @param options.limit - Maximum number of records to return.
-	 * @param options.status - Optional filter by conflict status.
-	 * @param options.sortBy - Field to sort by (created_at, resolved_at).
-	 * @param options.sortOrder - Sort order (asc, desc).
+	 * @param offset - Number of records to skip. Defaults to 0.
+	 * @param limit - Maximum number of records to return. Defaults to 10.
+	 * @param status - Optional filter by conflict status.
+	 * @param sortBy - Field to sort by (created_at, resolved_at). Defaults to "created_at".
+	 * @param sortOrder - Sort order (asc, desc). Defaults to "desc".
 	 * @returns MergeConflictList: Paginated list of merge conflicts.
 	 * @throws {UserNotFoundError} If the user is not found.
 	 * @throws {AuthenticationError} If the API key or project ID is invalid.
@@ -351,22 +369,28 @@ export class User {
 	 * @throws {TimeoutError} If the request times out.
 	 * @throws {RecallrAIError} For other API-related errors.
 	 */
-	async listMergeConflicts(options?: {
+	async listMergeConflicts({
+		offset = 0,
+		limit = 10,
+		status,
+		sortBy = "created_at",
+		sortOrder = "desc",
+	}: {
 		offset?: number;
 		limit?: number;
 		status?: MergeConflictStatus;
 		sortBy?: string;
 		sortOrder?: string;
-	}): Promise<{ conflicts: MergeConflict[]; total: number; hasMore: boolean }> {
+	} = {}): Promise<{ conflicts: MergeConflict[]; total: number; hasMore: boolean }> {
 		const params: Record<string, any> = {
-			offset: options?.offset || 0,
-			limit: options?.limit || 10,
-			sort_by: options?.sortBy || "created_at",
-			sort_order: options?.sortOrder || "desc",
+			offset,
+			limit,
+			sort_by: sortBy,
+			sort_order: sortOrder,
 		};
 
-		if (options?.status) {
-			params.status = options.status;
+		if (status) {
+			params.status = status;
 		}
 
 		const response = await this.http.get(`/api/v1/users/${this.userId}/merge-conflicts`, params);

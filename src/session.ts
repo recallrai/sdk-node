@@ -74,17 +74,16 @@ export class Session {
 	/**
 	 * Get the current context for this session.
 	 *
-	 * @param options - Context retrieval options
-	 * @param options.recallStrategy - The type of recall strategy to use.
-	 * @param options.minTopK - Minimum number of memories to return.
-	 * @param options.maxTopK - Maximum number of memories to return.
-	 * @param options.memoriesThreshold - Similarity threshold for memories.
-	 * @param options.summariesThreshold - Similarity threshold for summaries.
-	 * @param options.lastNMessages - Number of last messages to include in context.
-	 * @param options.lastNSummaries - Number of last summaries to include in context.
-	 * @param options.timezone - Timezone for formatting timestamps (e.g., 'America/New_York'). Defaults to UTC.
-	 * @param options.includeSystemPrompt - Whether to include the default system prompt of Recallr AI. Defaults to True.
-	 * @param options.includeMetadataIds - Whether to include memory IDs and session IDs that contributed to the context. Defaults to False.
+	 * @param recallStrategy - The type of recall strategy to use. Defaults to RecallStrategy.BALANCED.
+	 * @param minTopK - Minimum number of memories to return. Defaults to 15.
+	 * @param maxTopK - Maximum number of memories to return. Defaults to 50.
+	 * @param memoriesThreshold - Similarity threshold for memories. Defaults to 0.6.
+	 * @param summariesThreshold - Similarity threshold for summaries. Defaults to 0.5.
+	 * @param lastNMessages - Number of last messages to include in context.
+	 * @param lastNSummaries - Number of last summaries to include in context.
+	 * @param timezone - Timezone for formatting timestamps (e.g., 'America/New_York'). Defaults to UTC.
+	 * @param includeSystemPrompt - Whether to include the default system prompt of Recallr AI. Defaults to true.
+	 * @param includeMetadataIds - Whether to include memory IDs and session IDs that contributed to the context. Defaults to false.
 	 * @returns ContextResponse with the context and optional metadata.
 	 * @throws {UserNotFoundError} If the user is not found.
 	 * @throws {SessionNotFoundError} If the session is not found.
@@ -94,7 +93,18 @@ export class Session {
 	 * @throws {TimeoutError} If the request times out.
 	 * @throws {RecallrAIError} For other API-related errors.
 	 */
-	async getContext(options?: {
+	async getContext({
+		recallStrategy = RecallStrategy.BALANCED,
+		minTopK = 15,
+		maxTopK = 50,
+		memoriesThreshold = 0.6,
+		summariesThreshold = 0.5,
+		lastNMessages,
+		lastNSummaries,
+		timezone,
+		includeSystemPrompt = true,
+		includeMetadataIds = false,
+	}: {
 		recallStrategy?: RecallStrategy;
 		minTopK?: number;
 		maxTopK?: number;
@@ -105,25 +115,25 @@ export class Session {
 		timezone?: string;
 		includeSystemPrompt?: boolean;
 		includeMetadataIds?: boolean;
-	}): Promise<ContextResponse> {
+	} = {}): Promise<ContextResponse> {
 		const params: Record<string, any> = {
-			recall_strategy: options?.recallStrategy || RecallStrategy.BALANCED,
-			min_top_k: options?.minTopK || 15,
-			max_top_k: options?.maxTopK || 50,
-			memories_threshold: options?.memoriesThreshold || 0.6,
-			summaries_threshold: options?.summariesThreshold || 0.5,
-			include_system_prompt: options?.includeSystemPrompt !== undefined ? options.includeSystemPrompt : true,
-			include_metadata_ids: options?.includeMetadataIds !== undefined ? options.includeMetadataIds : false,
+			recall_strategy: recallStrategy,
+			min_top_k: minTopK,
+			max_top_k: maxTopK,
+			memories_threshold: memoriesThreshold,
+			summaries_threshold: summariesThreshold,
+			include_system_prompt: includeSystemPrompt,
+			include_metadata_ids: includeMetadataIds,
 		};
 
-		if (options?.lastNMessages !== undefined) {
-			params.last_n_messages = options.lastNMessages;
+		if (lastNMessages !== undefined) {
+			params.last_n_messages = lastNMessages;
 		}
-		if (options?.lastNSummaries !== undefined) {
-			params.last_n_summaries = options.lastNSummaries;
+		if (lastNSummaries !== undefined) {
+			params.last_n_summaries = lastNSummaries;
 		}
-		if (options?.timezone !== undefined) {
-			params.timezone = options.timezone;
+		if (timezone !== undefined) {
+			params.timezone = timezone;
 		}
 
 		const response = await this.http.get(`/api/v1/users/${this._userId}/sessions/${this.sessionId}/context`, params);
@@ -163,17 +173,16 @@ export class Session {
 	/**
 	 * Stream context events for this session using Server-Sent Events (SSE).
 	 *
-	 * @param options - Context retrieval options
-	 * @param options.recallStrategy - The type of recall strategy to use.
-	 * @param options.minTopK - Minimum number of memories to return.
-	 * @param options.maxTopK - Maximum number of memories to return.
-	 * @param options.memoriesThreshold - Similarity threshold for memories.
-	 * @param options.summariesThreshold - Similarity threshold for summaries.
-	 * @param options.lastNMessages - Number of last messages to include in context.
-	 * @param options.lastNSummaries - Number of last summaries to include in context.
-	 * @param options.timezone - Timezone for formatting timestamps (e.g., 'America/New_York'). Defaults to UTC.
-	 * @param options.includeSystemPrompt - Whether to include the default system prompt of Recallr AI. Defaults to True.
-	 * @param options.includeMetadataIds - Whether to include memory IDs and session IDs that contributed to the context. Defaults to False.
+	 * @param recallStrategy - The type of recall strategy to use. Defaults to RecallStrategy.BALANCED.
+	 * @param minTopK - Minimum number of memories to return. Defaults to 15.
+	 * @param maxTopK - Maximum number of memories to return. Defaults to 50.
+	 * @param memoriesThreshold - Similarity threshold for memories. Defaults to 0.6.
+	 * @param summariesThreshold - Similarity threshold for summaries. Defaults to 0.5.
+	 * @param lastNMessages - Number of last messages to include in context.
+	 * @param lastNSummaries - Number of last summaries to include in context.
+	 * @param timezone - Timezone for formatting timestamps (e.g., 'America/New_York'). Defaults to UTC.
+	 * @param includeSystemPrompt - Whether to include the default system prompt of Recallr AI. Defaults to true.
+	 * @param includeMetadataIds - Whether to include memory IDs and session IDs that contributed to the context. Defaults to false.
 	 * @returns An async generator yielding context events as they are processed.
 	 * @throws {UserNotFoundError} If the user is not found.
 	 * @throws {SessionNotFoundError} If the session is not found.
@@ -183,7 +192,18 @@ export class Session {
 	 * @throws {TimeoutError} If the request times out.
 	 * @throws {RecallrAIError} For other API-related errors.
 	 */
-	async *getContextStream(options?: {
+	async *getContextStream({
+		recallStrategy = RecallStrategy.BALANCED,
+		minTopK = 15,
+		maxTopK = 50,
+		memoriesThreshold = 0.6,
+		summariesThreshold = 0.5,
+		lastNMessages,
+		lastNSummaries,
+		timezone,
+		includeSystemPrompt = true,
+		includeMetadataIds = false,
+	}: {
 		recallStrategy?: RecallStrategy;
 		minTopK?: number;
 		maxTopK?: number;
@@ -194,26 +214,26 @@ export class Session {
 		timezone?: string;
 		includeSystemPrompt?: boolean;
 		includeMetadataIds?: boolean;
-	}): AsyncGenerator<ContextResponse> {
+	} = {}): AsyncGenerator<ContextResponse> {
 		const params: Record<string, any> = {
-			recall_strategy: options?.recallStrategy || RecallStrategy.BALANCED,
-			min_top_k: options?.minTopK || 15,
-			max_top_k: options?.maxTopK || 50,
-			memories_threshold: options?.memoriesThreshold || 0.6,
-			summaries_threshold: options?.summariesThreshold || 0.5,
-			include_system_prompt: options?.includeSystemPrompt !== undefined ? options.includeSystemPrompt : true,
-			include_metadata_ids: options?.includeMetadataIds !== undefined ? options.includeMetadataIds : false,
+			recall_strategy: recallStrategy,
+			min_top_k: minTopK,
+			max_top_k: maxTopK,
+			memories_threshold: memoriesThreshold,
+			summaries_threshold: summariesThreshold,
+			include_system_prompt: includeSystemPrompt,
+			include_metadata_ids: includeMetadataIds,
 			stream: true,
 		};
 
-		if (options?.lastNMessages !== undefined) {
-			params.last_n_messages = options.lastNMessages;
+		if (lastNMessages !== undefined) {
+			params.last_n_messages = lastNMessages;
 		}
-		if (options?.lastNSummaries !== undefined) {
-			params.last_n_summaries = options.lastNSummaries;
+		if (lastNSummaries !== undefined) {
+			params.last_n_summaries = lastNSummaries;
 		}
-		if (options?.timezone !== undefined) {
-			params.timezone = options.timezone;
+		if (timezone !== undefined) {
+			params.timezone = timezone;
 		}
 
 		for await (const line of this.http.streamLines(`/api/v1/users/${this._userId}/sessions/${this.sessionId}/context`, params)) {
