@@ -37,14 +37,16 @@ export enum RecallStrategy {
 	AUTO = "auto",
 }
 
-export interface Context {
-	context: string;
+export interface ContextMetadata {
+	memoryIds: string[];
+	sessionIds: string[];
+	agentReasoning?: string; // Only populated for agentic recall strategy
 }
 
-export interface ContextEvent {
+export interface ContextResponse {
 	isFinal: boolean;
 	statusUpdateMessage?: string;
 	errorMessage?: string;
 	context?: string;
-	metadata?: Record<string, any>;
+	metadata?: ContextMetadata;
 }

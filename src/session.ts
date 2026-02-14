@@ -3,7 +3,7 @@
  */
 
 import { HTTPClient } from "./utils";
-import { Context, ContextEvent, SessionMessagesList, SessionModel, SessionStatus, MessageRole, RecallStrategy } from "./models";
+import { ContextResponse, SessionMessagesList, SessionModel, SessionStatus, MessageRole, RecallStrategy } from "./models";
 import { UserNotFoundError, SessionNotFoundError, InvalidSessionStateError, RecallrAIError } from "./errors";
 
 /**
@@ -84,7 +84,8 @@ export class Session {
 	 * @param options.lastNSummaries - Number of last summaries to include in context.
 	 * @param options.timezone - Timezone for formatting timestamps (e.g., 'America/New_York'). Defaults to UTC.
 	 * @param options.includeSystemPrompt - Whether to include the default system prompt of Recallr AI. Defaults to True.
-	 * @returns Context information with the memory text and whether memory was used.
+	 * @param options.includeMetadataIds - Whether to include memory IDs and session IDs that contributed to the context. Defaults to False.
+	 * @returns ContextResponse with the context and optional metadata.
 	 * @throws {UserNotFoundError} If the user is not found.
 	 * @throws {SessionNotFoundError} If the session is not found.
 	 * @throws {AuthenticationError} If the API key or project ID is invalid.
@@ -103,7 +104,8 @@ export class Session {
 		lastNSummaries?: number;
 		timezone?: string;
 		includeSystemPrompt?: boolean;
-	}): Promise<Context> {
+		includeMetadataIds?: boolean;
+	}): Promise<ContextResponse> {
 		const params: Record<string, any> = {
 			recall_strategy: options?.recallStrategy || RecallStrategy.BALANCED,
 			min_top_k: options?.minTopK || 15,
@@ -111,6 +113,7 @@ export class Session {
 			memories_threshold: options?.memoriesThreshold || 0.6,
 			summaries_threshold: options?.summariesThreshold || 0.5,
 			include_system_prompt: options?.includeSystemPrompt !== undefined ? options.includeSystemPrompt : true,
+			include_metadata_ids: options?.includeMetadataIds !== undefined ? options.includeMetadataIds : false,
 		};
 
 		if (options?.lastNMessages !== undefined) {
@@ -142,13 +145,43 @@ export class Session {
 			console.warn("You are trying to get context for a processing session. Why do you need it?");
 		}
 
+		const metadata = response.data.metadata
+			? {
+					memoryIds: response.data.metadata.memory_ids || [],
+					sessionIds: response.data.metadata.session_ids || [],
+					agentReasoning: response.data.metadata.agent_reasoning,
+			}
+			: undefined;
+
 		return {
+			isFinal: true,
 			context: response.data.context,
+			metadata,
 		};
 	}
 
 	/**
 	 * Stream context events for this session using Server-Sent Events (SSE).
+	 *
+	 * @param options - Context retrieval options
+	 * @param options.recallStrategy - The type of recall strategy to use.
+	 * @param options.minTopK - Minimum number of memories to return.
+	 * @param options.maxTopK - Maximum number of memories to return.
+	 * @param options.memoriesThreshold - Similarity threshold for memories.
+	 * @param options.summariesThreshold - Similarity threshold for summaries.
+	 * @param options.lastNMessages - Number of last messages to include in context.
+	 * @param options.lastNSummaries - Number of last summaries to include in context.
+	 * @param options.timezone - Timezone for formatting timestamps (e.g., 'America/New_York'). Defaults to UTC.
+	 * @param options.includeSystemPrompt - Whether to include the default system prompt of Recallr AI. Defaults to True.
+	 * @param options.includeMetadataIds - Whether to include memory IDs and session IDs that contributed to the context. Defaults to False.
+	 * @returns An async generator yielding context events as they are processed.
+	 * @throws {UserNotFoundError} If the user is not found.
+	 * @throws {SessionNotFoundError} If the session is not found.
+	 * @throws {AuthenticationError} If the API key or project ID is invalid.
+	 * @throws {InternalServerError} If the server encounters an error.
+	 * @throws {NetworkError} If there are network issues.
+	 * @throws {TimeoutError} If the request times out.
+	 * @throws {RecallrAIError} For other API-related errors.
 	 */
 	async *getContextStream(options?: {
 		recallStrategy?: RecallStrategy;
@@ -160,7 +193,8 @@ export class Session {
 		lastNSummaries?: number;
 		timezone?: string;
 		includeSystemPrompt?: boolean;
-	}): AsyncGenerator<ContextEvent> {
+		includeMetadataIds?: boolean;
+	}): AsyncGenerator<ContextResponse> {
 		const params: Record<string, any> = {
 			recall_strategy: options?.recallStrategy || RecallStrategy.BALANCED,
 			min_top_k: options?.minTopK || 15,
@@ -168,6 +202,7 @@ export class Session {
 			memories_threshold: options?.memoriesThreshold || 0.6,
 			summaries_threshold: options?.summariesThreshold || 0.5,
 			include_system_prompt: options?.includeSystemPrompt !== undefined ? options.includeSystemPrompt : true,
+			include_metadata_ids: options?.includeMetadataIds !== undefined ? options.includeMetadataIds : false,
 			stream: true,
 		};
 
@@ -186,17 +221,25 @@ export class Session {
 			const payload = line.slice("data:".length).trim();
 			if (!payload) continue;
 			const data = JSON.parse(payload);
-			yield this.parseContextEvent(data);
+			yield this.parseContextResponse(data);
 		}
 	}
 
-	private parseContextEvent(data: any): ContextEvent {
+	private parseContextResponse(data: any): ContextResponse {
+		const metadataData = data?.metadata;
+		const metadata = metadataData
+			? {
+					memoryIds: metadataData.memory_ids || [],
+					sessionIds: metadataData.session_ids || [],
+					agentReasoning: metadataData.agent_reasoning,
+			}
+			: undefined;
 		return {
 			isFinal: Boolean(data?.is_final),
 			statusUpdateMessage: data?.status_update_message ?? undefined,
 			errorMessage: data?.error_message ?? undefined,
 			context: data?.context ?? undefined,
-			metadata: data?.metadata ?? undefined,
+			metadata,
 		};
 	}
 
