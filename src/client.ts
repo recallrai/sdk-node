@@ -49,7 +49,7 @@ export class RecallrAI {
 	async createUser(userId: string, metadata?: Record<string, any>): Promise<User> {
 		const response = await this.http.post("/api/v1/users", {
 			user_id: userId,
-			metadata: metadata || {},
+			metadata: metadata,
 		});
 
 		if (response.status === 409) {
