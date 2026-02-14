@@ -155,19 +155,7 @@ export class Session {
 			console.warn("You are trying to get context for a processing session. Why do you need it?");
 		}
 
-		const metadata = response.data.metadata
-			? {
-					memoryIds: response.data.metadata.memory_ids || [],
-					sessionIds: response.data.metadata.session_ids || [],
-					agentReasoning: response.data.metadata.agent_reasoning,
-			}
-			: undefined;
-
-		return {
-			isFinal: true,
-			context: response.data.context,
-			metadata,
-		};
+		return this.parseContextResponse(response.data);
 	}
 
 	/**
@@ -247,11 +235,22 @@ export class Session {
 
 	private parseContextResponse(data: any): ContextResponse {
 		const metadataData = data?.metadata;
+		const dateRangeFilters = metadataData?.date_range_filters
+			? metadataData.date_range_filters.map((filter: any) => ({
+					filterType: filter.filter_type,
+					startDate: filter.start_date,
+					endDate: filter.end_date,
+				}))
+			: undefined;
 		const metadata = metadataData
 			? {
-					memoryIds: metadataData.memory_ids || [],
-					sessionIds: metadataData.session_ids || [],
-					agentReasoning: metadataData.agent_reasoning,
+					memoryIds: metadataData.memory_ids ?? undefined,
+					sessionIds: metadataData.session_ids ?? undefined,
+					agentReasoning: metadataData.agent_reasoning ?? undefined,
+					vectorSearchQueries: metadataData.vector_search_queries ?? undefined,
+					keywords: metadataData.keywords ?? undefined,
+					sessionSummariesSearchQueries: metadataData.session_summaries_search_queries ?? undefined,
+					dateRangeFilters,
 			}
 			: undefined;
 		return {

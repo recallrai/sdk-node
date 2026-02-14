@@ -297,6 +297,17 @@ try {
 		timezone: "America/Los_Angeles",
 	});
 	console.log("Context:", context.context);
+
+	context = await session.getContext({ includeMetadataIds: true });
+	if (context.metadata) {
+		console.log("Memory IDs:", context.metadata.memoryIds);
+		console.log("Session IDs:", context.metadata.sessionIds);
+		console.log("Vector Queries:", context.metadata.vectorSearchQueries);
+		console.log("Keywords:", context.metadata.keywords);
+		console.log("Summary Queries:", context.metadata.sessionSummariesSearchQueries);
+		console.log("Date Filters:", context.metadata.dateRangeFilters);
+		console.log("Agent Reasoning:", context.metadata.agentReasoning);
+	}
 } catch (error) {
 	if (error instanceof UserNotFoundError) {
 		console.log(`Error: ${error.message}`);

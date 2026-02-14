@@ -37,10 +37,25 @@ export enum RecallStrategy {
 	AUTO = "auto",
 }
 
+export enum DateRangeFilterType {
+	EVENT_DATE = "event_date",
+	CREATED_AT = "created_at",
+}
+
+export interface QueryDateRangeFilter {
+	filterType: DateRangeFilterType;
+	startDate: string;
+	endDate: string;
+}
+
 export interface ContextMetadata {
-	memoryIds: string[];
-	sessionIds: string[];
+	memoryIds?: string[];
+	sessionIds?: string[];
 	agentReasoning?: string; // Only populated for agentic recall strategy
+	vectorSearchQueries?: string[];
+	keywords?: string[];
+	sessionSummariesSearchQueries?: string[];
+	dateRangeFilters?: QueryDateRangeFilter[];
 }
 
 export interface ContextResponse {
