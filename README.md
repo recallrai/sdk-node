@@ -306,6 +306,39 @@ try {
 }
 ```
 
+### Session – Streaming Context
+
+```typescript
+import { UserNotFoundError, SessionNotFoundError, RecallStrategy } from "recallrai";
+
+try {
+	for await (const event of session.getContextStream({
+		recallStrategy: RecallStrategy.BALANCED,
+		timezone: "America/Los_Angeles",
+	})) {
+		if (event.statusUpdateMessage) {
+			console.log("Status:", event.statusUpdateMessage);
+		}
+		if (event.metadata) {
+			console.log("Metadata:", event.metadata);
+		}
+		if (event.isFinal) {
+			if (event.errorMessage) {
+				console.log("Error:", event.errorMessage);
+			} else {
+				console.log("Final context:", event.context);
+			}
+		}
+	}
+} catch (error) {
+	if (error instanceof UserNotFoundError) {
+		console.log(`Error: ${error.message}`);
+	} else if (error instanceof SessionNotFoundError) {
+		console.log(`Error: ${error.message}`);
+	}
+}
+```
+
 ### Session – Process Session
 
 ```typescript

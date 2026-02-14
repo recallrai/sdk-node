@@ -159,4 +159,66 @@ export class HTTPClient {
 	async delete(path: string): Promise<AxiosResponse> {
 		return this.request("DELETE", path);
 	}
+
+	/**
+	 * Stream Server-Sent Events (SSE) from the API.
+	 */
+	async *streamLines(path: string, params?: Record<string, any>): AsyncGenerator<string> {
+		const url = `${this.baseUrl}${path}`;
+		const filteredParams = this.filterParams(params);
+
+		try {
+			const response = await this.client.request({
+				method: "GET",
+				url,
+				params: filteredParams,
+				responseType: "stream",
+				headers: {
+					"Accept": "text/event-stream",
+				},
+			});
+
+			if (response.status !== 200) {
+				throw new ConnectionError("Unexpected response from server", response.status);
+			}
+
+			let buffer = "";
+			for await (const chunk of response.data as AsyncIterable<Buffer>) {
+				buffer += chunk.toString("utf8");
+				const lines = buffer.split("\n");
+				buffer = lines.pop() || "";
+				for (const line of lines) {
+					if (line.length > 0) {
+						yield line;
+					}
+				}
+			}
+		} catch (error) {
+			if (axios.isAxiosError(error)) {
+				const axiosError = error as AxiosError;
+
+				if (axiosError.code === "ECONNABORTED" || axiosError.message.includes("timeout")) {
+					throw new TimeoutError(`Request timed out: ${axiosError.message}`, 0);
+				}
+
+				if (axiosError.code === "ECONNREFUSED" || axiosError.code === "ENOTFOUND") {
+					throw new ConnectionError(`Failed to connect to the API: ${axiosError.message}`, 0);
+				}
+
+				if (axiosError.response) {
+					const status = axiosError.response.status;
+					const detail = (axiosError.response.data as any)?.detail || axiosError.message;
+
+					if (status === 422) {
+						throw new ValidationError(detail, status);
+					} else if (status === 500) {
+						throw new InternalServerError(detail, status);
+					} else if (status === 401) {
+						throw new AuthenticationError(detail, status);
+					}
+				}
+			}
+			throw error;
+		}
+	}
 }

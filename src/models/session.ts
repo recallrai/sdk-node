@@ -40,3 +40,11 @@ export enum RecallStrategy {
 export interface Context {
 	context: string;
 }
+
+export interface ContextEvent {
+	isFinal: boolean;
+	statusUpdateMessage?: string;
+	errorMessage?: string;
+	context?: string;
+	metadata?: Record<string, any>;
+}

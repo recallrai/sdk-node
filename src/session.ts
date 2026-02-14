@@ -3,7 +3,7 @@
  */
 
 import { HTTPClient } from "./utils";
-import { Context, SessionMessagesList, SessionModel, SessionStatus, MessageRole, RecallStrategy } from "./models";
+import { Context, ContextEvent, SessionMessagesList, SessionModel, SessionStatus, MessageRole, RecallStrategy } from "./models";
 import { UserNotFoundError, SessionNotFoundError, InvalidSessionStateError, RecallrAIError } from "./errors";
 
 /**
@@ -144,6 +144,59 @@ export class Session {
 
 		return {
 			context: response.data.context,
+		};
+	}
+
+	/**
+	 * Stream context events for this session using Server-Sent Events (SSE).
+	 */
+	async *getContextStream(options?: {
+		recallStrategy?: RecallStrategy;
+		minTopK?: number;
+		maxTopK?: number;
+		memoriesThreshold?: number;
+		summariesThreshold?: number;
+		lastNMessages?: number;
+		lastNSummaries?: number;
+		timezone?: string;
+		includeSystemPrompt?: boolean;
+	}): AsyncGenerator<ContextEvent> {
+		const params: Record<string, any> = {
+			recall_strategy: options?.recallStrategy || RecallStrategy.BALANCED,
+			min_top_k: options?.minTopK || 15,
+			max_top_k: options?.maxTopK || 50,
+			memories_threshold: options?.memoriesThreshold || 0.6,
+			summaries_threshold: options?.summariesThreshold || 0.5,
+			include_system_prompt: options?.includeSystemPrompt !== undefined ? options.includeSystemPrompt : true,
+			stream: true,
+		};
+
+		if (options?.lastNMessages !== undefined) {
+			params.last_n_messages = options.lastNMessages;
+		}
+		if (options?.lastNSummaries !== undefined) {
+			params.last_n_summaries = options.lastNSummaries;
+		}
+		if (options?.timezone !== undefined) {
+			params.timezone = options.timezone;
+		}
+
+		for await (const line of this.http.streamLines(`/api/v1/users/${this._userId}/sessions/${this.sessionId}/context`, params)) {
+			if (!line.startsWith("data:")) continue;
+			const payload = line.slice("data:".length).trim();
+			if (!payload) continue;
+			const data = JSON.parse(payload);
+			yield this.parseContextEvent(data);
+		}
+	}
+
+	private parseContextEvent(data: any): ContextEvent {
+		return {
+			isFinal: Boolean(data?.is_final),
+			statusUpdateMessage: data?.status_update_message ?? undefined,
+			errorMessage: data?.error_message ?? undefined,
+			context: data?.context ?? undefined,
+			metadata: data?.metadata ?? undefined,
 		};
 	}
 
