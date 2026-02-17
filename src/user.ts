@@ -354,6 +354,44 @@ export class User {
 	}
 
 	/**
+	 * Retrieve a specific memory by ID.
+	 *
+	 * @param memoryId - UUID of the memory to retrieve.
+	 * @param includePreviousVersions - Include full version history. Defaults to true.
+	 * @param includeConnectedMemories - Include connected memories. Defaults to true.
+	 * @returns UserMemoryItem: Complete memory object.
+	 * @throws {RecallrAIError} If the memory is not found or another error occurs.
+	 * @throws {AuthenticationError} If the API key or project ID is invalid.
+	 * @throws {InternalServerError} If the server encounters an error.
+	 * @throws {NetworkError} If there are network issues.
+	 * @throws {TimeoutError} If the request times out.
+	 */
+	async getMemory(
+		memoryId: string,
+		{
+			includePreviousVersions = true,
+			includeConnectedMemories = true,
+		}: {
+			includePreviousVersions?: boolean;
+			includeConnectedMemories?: boolean;
+		} = {},
+	): Promise<UserMemoryItem> {
+		const response = await this.http.get(`/api/v1/users/${this.userId}/memory/${memoryId}`, {
+			include_previous_versions: includePreviousVersions,
+			include_connected_memories: includeConnectedMemories,
+		});
+
+		if (response.status === 404) {
+			const detail = response.data?.detail || `Memory ${memoryId} not found`;
+			throw new RecallrAIError(detail, response.status);
+		} else if (response.status !== 200) {
+			throw new RecallrAIError(response.data?.detail || "Unknown error", response.status);
+		}
+
+		return this.parseMemoryItem(response.data);
+	}
+
+	/**
 	 * Delete a memory (or its version history) for this user.
 	 *
 	 * @param memoryId - UUID of the memory to delete (can be any version in the chain).
