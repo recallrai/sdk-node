@@ -573,6 +573,8 @@ export class User {
 			memoryId: data.memory_id,
 			categories: data.categories,
 			content: data.content,
+			eventDateStart: new Date(data.event_date_start),
+			eventDateEnd: new Date(data.event_date_end),
 			createdAt: new Date(data.created_at),
 			versionNumber: data.version_number,
 			totalVersions: data.total_versions,
@@ -581,6 +583,8 @@ export class User {
 				? data.previous_versions.map((v: any) => ({
 						versionNumber: v.version_number,
 						content: v.content,
+						eventDateStart: new Date(v.event_date_start),
+						eventDateEnd: new Date(v.event_date_end),
 						createdAt: new Date(v.created_at),
 						expiredAt: new Date(v.expired_at),
 						expirationReason: v.expiration_reason,
@@ -601,12 +605,15 @@ export class User {
 		const conflictData = data.conflict || data;
 		return {
 			id: conflictData.id,
-			customUserId: conflictData.custom_user_id,
 			projectUserSessionId: conflictData.project_user_session_id,
 			newMemoryContent: conflictData.new_memory_content,
 			conflictingMemories: conflictData.conflicting_memories.map((mem: any) => ({
+				memoryId: mem.memory_id,
 				content: mem.content,
 				reason: mem.reason,
+				eventDateStart: new Date(mem.event_date_start),
+				eventDateEnd: new Date(mem.event_date_end),
+				createdAt: new Date(mem.created_at),
 			})),
 			clarifyingQuestions: conflictData.clarifying_questions.map((q: any) => ({
 				question: q.question,
