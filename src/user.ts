@@ -354,6 +354,32 @@ export class User {
 	}
 
 	/**
+	 * Delete a memory (or its version history) for this user.
+	 *
+	 * @param memoryId - UUID of the memory to delete (can be any version in the chain).
+	 * @param deletePreviousVersions - If true, deletes the specified version and all
+	 *   previous versions in the chain. If false (default), deletes only the specified version.
+	 * @throws {RecallrAIError} If the memory is not found or another error occurs.
+	 * @throws {AuthenticationError} If the API key or project ID is invalid.
+	 * @throws {InternalServerError} If the server encounters an error.
+	 * @throws {NetworkError} If there are network issues.
+	 * @throws {TimeoutError} If the request times out.
+	 */
+	async deleteMemory(memoryId: string, deletePreviousVersions: boolean = false): Promise<void> {
+		const response = await this.http.delete(
+			`/api/v1/users/${this.userId}/memory/${memoryId}`,
+			{ delete_previous_versions: deletePreviousVersions },
+		);
+
+		if (response.status === 404) {
+			const detail = response.data?.detail || `Memory ${memoryId} not found`;
+			throw new RecallrAIError(detail, response.status);
+		} else if (response.status !== 204) {
+			throw new RecallrAIError(response.data?.detail || "Unknown error", response.status);
+		}
+	}
+
+	/**
 	 * List merge conflicts for this user.
 	 *
 	 * @param offset - Number of records to skip. Defaults to 0.

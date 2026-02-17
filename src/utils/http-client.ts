@@ -156,8 +156,8 @@ export class HTTPClient {
 	/**
 	 * Make a DELETE request.
 	 */
-	async delete(path: string): Promise<AxiosResponse> {
-		return this.request("DELETE", path);
+	async delete(path: string, params?: Record<string, any>): Promise<AxiosResponse> {
+		return this.request("DELETE", path, params);
 	}
 
 	/**
