@@ -263,6 +263,35 @@ export class Session {
 	}
 
 	/**
+	 * Delete this session and all associated data.
+	 *
+	 * Permanently deletes the session along with its messages and any memories,
+	 * memory connections, memory categories, and merge conflicts created from it.
+	 *
+	 * @throws {UserNotFoundError} If the user is not found.
+	 * @throws {SessionNotFoundError} If the session is not found.
+	 * @throws {AuthenticationError} If the API key or project ID is invalid.
+	 * @throws {InternalServerError} If the server encounters an error.
+	 * @throws {NetworkError} If there are network issues.
+	 * @throws {TimeoutError} If the request times out.
+	 * @throws {RecallrAIError} For other API-related errors.
+	 */
+	async delete(): Promise<void> {
+		const response = await this.http.delete(`/api/v1/users/${this._userId}/sessions/${this.sessionId}`);
+
+		if (response.status === 404) {
+			const detail = response.data?.detail || "";
+			if (detail.includes(`User ${this._userId} not found`)) {
+				throw new UserNotFoundError(detail, response.status);
+			} else {
+				throw new SessionNotFoundError(detail, response.status);
+			}
+		} else if (response.status !== 204) {
+			throw new RecallrAIError(response.data?.detail || "Unknown error", response.status);
+		}
+	}
+
+	/**
 	 * Update the session's metadata.
 	 *
 	 * @param newMetadata - New metadata to associate with the session.

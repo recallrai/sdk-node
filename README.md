@@ -225,6 +225,26 @@ try {
 }
 ```
 
+### Delete a Session
+
+```typescript
+import { UserNotFoundError, SessionNotFoundError } from "recallrai";
+
+try {
+	const user = await client.getUser("user123");
+	const session = await user.getSession("session-uuid");
+
+	await session.delete();
+	console.log("Session deleted successfully");
+} catch (error) {
+	if (error instanceof UserNotFoundError) {
+		console.log(`Error: ${error.message}`);
+	} else if (error instanceof SessionNotFoundError) {
+		console.log(`Error: ${error.message}`);
+	}
+}
+```
+
 ### List Sessions
 
 ```typescript
