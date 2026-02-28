@@ -3,7 +3,7 @@
  */
 
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from "axios";
-import { TimeoutError, ConnectionError, ValidationError, InternalServerError, AuthenticationError } from "../errors";
+import { TimeoutError, ConnectionError, ValidationError, InternalServerError, AuthenticationError, RateLimitError } from "../errors";
 
 /**
  * HTTP client for making requests to the RecallrAI API.
@@ -125,6 +125,8 @@ export class HTTPClient {
 						throw new InternalServerError(detail, status);
 					} else if (status === 401) {
 						throw new AuthenticationError(detail, status);
+					} else if (status === 429) {
+						throw new RateLimitError(detail, status);
 					}
 				}
 			}
@@ -178,6 +180,9 @@ export class HTTPClient {
 				},
 			});
 
+			if (response.status === 429) {
+				throw new RateLimitError("Please try again in a few moments.", response.status);
+			}
 			if (response.status !== 200) {
 				throw new ConnectionError("Unexpected response from server", response.status);
 			}
@@ -215,6 +220,8 @@ export class HTTPClient {
 						throw new InternalServerError(detail, status);
 					} else if (status === 401) {
 						throw new AuthenticationError(detail, status);
+					} else if (status === 429) {
+						throw new RateLimitError(detail, status);
 					}
 				}
 			}
