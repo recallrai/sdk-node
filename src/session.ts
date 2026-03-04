@@ -116,13 +116,19 @@ export class Session {
 		includeSystemPrompt?: boolean;
 		includeMetadataIds?: boolean;
 	} = {}): Promise<ContextResponse> {
+		// Fetch and cache the system prompt client-side to avoid sending ~20 KB on every request
+		let systemPromptText: string | null = null;
+		if (includeSystemPrompt) {
+			systemPromptText = await this.http.getCachedSystemPrompt();
+		}
+
 		const params: Record<string, any> = {
 			recall_strategy: recallStrategy,
 			min_top_k: minTopK,
 			max_top_k: maxTopK,
 			memories_threshold: memoriesThreshold,
 			summaries_threshold: summariesThreshold,
-			include_system_prompt: includeSystemPrompt,
+			include_system_prompt: false,
 			include_metadata_ids: includeMetadataIds,
 		};
 
@@ -155,7 +161,11 @@ export class Session {
 			console.warn("You are trying to get context for a processing session. Why do you need it?");
 		}
 
-		return this.parseContextResponse(response.data);
+		const result = this.parseContextResponse(response.data);
+		if (systemPromptText !== null && result.context !== undefined) {
+			return { ...result, context: systemPromptText + "\n\n\n" + result.context };
+		}
+		return result;
 	}
 
 	/**
@@ -203,13 +213,19 @@ export class Session {
 		includeSystemPrompt?: boolean;
 		includeMetadataIds?: boolean;
 	} = {}): AsyncGenerator<ContextResponse> {
+		// Fetch and cache the system prompt client-side to avoid sending ~20 KB on every request
+		let systemPromptText: string | null = null;
+		if (includeSystemPrompt) {
+			systemPromptText = await this.http.getCachedSystemPrompt();
+		}
+
 		const params: Record<string, any> = {
 			recall_strategy: recallStrategy,
 			min_top_k: minTopK,
 			max_top_k: maxTopK,
 			memories_threshold: memoriesThreshold,
 			summaries_threshold: summariesThreshold,
-			include_system_prompt: includeSystemPrompt,
+			include_system_prompt: false,
 			include_metadata_ids: includeMetadataIds,
 			stream: true,
 		};
@@ -229,7 +245,12 @@ export class Session {
 			const payload = line.slice("data:".length).trim();
 			if (!payload) continue;
 			const data = JSON.parse(payload);
-			yield this.parseContextResponse(data);
+			const event = this.parseContextResponse(data);
+			if (systemPromptText !== null && event.isFinal && event.context !== undefined) {
+				yield { ...event, context: systemPromptText + "\n\n\n" + event.context };
+			} else {
+				yield event;
+			}
 		}
 	}
 

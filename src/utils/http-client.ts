@@ -14,6 +14,8 @@ export class HTTPClient {
 	private projectId: string;
 	private baseUrl: string;
 	private timeout: number;
+	private _systemPromptCache: string | null = null;
+	private _systemPromptCacheExpiresAt: number = 0;
 
 	/**
 	 * Initialize the HTTP client.
@@ -227,5 +229,19 @@ export class HTTPClient {
 			}
 			throw error;
 		}
+	}
+
+	/**
+	 * Fetch the global system prompt, caching it for one hour.
+	 */
+	async getCachedSystemPrompt(): Promise<string> {
+		const now = Date.now();
+		if (this._systemPromptCache !== null && now < this._systemPromptCacheExpiresAt) {
+			return this._systemPromptCache;
+		}
+		const response = await this.get("/api/v1/system-prompt");
+		this._systemPromptCache = response.data.system_prompt as string;
+		this._systemPromptCacheExpiresAt = now + 3600 * 1000;
+		return this._systemPromptCache;
 	}
 }
