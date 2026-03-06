@@ -518,7 +518,7 @@ try {
 	for (const conf of conflicts.conflicts) {
 		console.log(`Conflict ID: ${conf.conflictId}`);
 		console.log(`Status: ${conf.status}`);
-		console.log(`New memory: ${conf.newMemoryContent}`);
+		console.log(`New memory: ${conf.proposedMemoryContent}`);
 		console.log(`Conflicting memories: ${conf.conflictingMemories.length}`);
 		console.log(`Questions: ${conf.clarifyingQuestions.length}`);
 		console.log(`Created at: ${conf.createdAt}`);
@@ -542,7 +542,7 @@ try {
 
 	console.log(`Conflict ID: ${conflict.conflictId}`);
 	console.log(`Status: ${conflict.status}`);
-	console.log(`New memory content: ${conflict.newMemoryContent}`);
+	console.log(`New memory content: ${conflict.proposedMemoryContent}`);
 
 	console.log("\nConflicting memories:");
 	for (const mem of conflict.conflictingMemories) {
