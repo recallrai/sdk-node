@@ -606,7 +606,7 @@ export class User {
 		return {
 			id: conflictData.id,
 			projectUserSessionId: conflictData.project_user_session_id,
-			newMemoryContent: conflictData.new_memory_content,
+			proposedMemoryContent: conflictData.proposed_memory_content,
 			conflictingMemories: conflictData.conflicting_memories.map((mem: any) => ({
 				memoryId: mem.memory_id,
 				content: mem.content,

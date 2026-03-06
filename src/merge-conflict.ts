@@ -27,7 +27,7 @@ export class MergeConflict {
 	public readonly userId: string;
 	public conflictId: string;
 	public status: MergeConflictStatus;
-	public newMemoryContent?: string;
+	public proposedMemoryContent?: string;
 	public newMemories?: MergeConflictNewMemory[];
 	public conflictingMemories: MergeConflictConflictingMemory[];
 	public clarifyingQuestions: MergeConflictQuestion[];
@@ -49,7 +49,7 @@ export class MergeConflict {
 
 		this.conflictId = conflictData.id;
 		this.status = conflictData.status;
-		this.newMemoryContent = conflictData.newMemoryContent;
+		this.proposedMemoryContent = conflictData.proposedMemoryContent;
 		this.newMemories = conflictData.newMemories;
 		this.conflictingMemories = conflictData.conflictingMemories;
 		this.clarifyingQuestions = conflictData.clarifyingQuestions;

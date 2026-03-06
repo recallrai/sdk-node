@@ -37,7 +37,7 @@ export interface MergeConflictAnswer {
 export interface MergeConflictModel {
 	id: string;
 	projectUserSessionId: string;
-	newMemoryContent?: string;
+	proposedMemoryContent?: string;
 	newMemories?: MergeConflictNewMemory[];
 	conflictingMemories: MergeConflictConflictingMemory[];
 	clarifyingQuestions: MergeConflictQuestion[];
