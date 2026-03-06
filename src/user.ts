@@ -36,6 +36,7 @@ export class User {
 
 	public userId: string;
 	public metadata: Record<string, any>;
+	public mergeConflictEnabled: boolean | undefined;
 	public createdAt: Date;
 	public lastActiveAt: Date;
 
@@ -50,6 +51,7 @@ export class User {
 		this.userData = userData;
 		this.userId = userData.userId;
 		this.metadata = userData.metadata;
+		this.mergeConflictEnabled = userData.mergeConflictEnabled;
 		this.createdAt = userData.createdAt;
 		this.lastActiveAt = userData.lastActiveAt;
 	}
@@ -59,6 +61,10 @@ export class User {
 	 *
 	 * @param newMetadata - New metadata to associate with the user.
 	 * @param newUserId - New ID for the user.
+	 * @param mergeConflictEnabled - Per-user merge conflict override.
+	 *   `true` = always raise merge conflicts for this user.
+	 *   `false` = never raise merge conflicts for this user.
+	 *   `undefined` = do not change the current setting.
 	 * @throws {UserNotFoundError} If the user is not found.
 	 * @throws {UserAlreadyExistsError} If a user with the new_user_id already exists.
 	 * @throws {AuthenticationError} If the API key or project ID is invalid.
@@ -70,9 +76,11 @@ export class User {
 	async update({
 		newMetadata,
 		newUserId,
+		mergeConflictEnabled,
 	}: {
 		newMetadata?: Record<string, any>;
 		newUserId?: string;
+		mergeConflictEnabled?: boolean;
 	} = {}): Promise<void> {
 		const data: Record<string, any> = {};
 		if (newMetadata !== undefined) {
@@ -80,6 +88,9 @@ export class User {
 		}
 		if (newUserId !== undefined) {
 			data.new_user_id = newUserId;
+		}
+		if (mergeConflictEnabled !== undefined) {
+			data.merge_conflict_enabled = mergeConflictEnabled;
 		}
 
 		const response = await this.http.put(`/api/v1/users/${this.userId}`, data);
@@ -98,6 +109,7 @@ export class User {
 		this.userData = updatedData;
 		this.userId = updatedData.userId;
 		this.metadata = updatedData.metadata;
+		this.mergeConflictEnabled = updatedData.mergeConflictEnabled;
 		this.lastActiveAt = updatedData.lastActiveAt;
 	}
 
@@ -125,6 +137,7 @@ export class User {
 		this.userData = refreshedData;
 		this.userId = refreshedData.userId;
 		this.metadata = refreshedData.metadata;
+		this.mergeConflictEnabled = refreshedData.mergeConflictEnabled;
 		this.createdAt = refreshedData.createdAt;
 		this.lastActiveAt = refreshedData.lastActiveAt;
 	}
@@ -552,7 +565,8 @@ export class User {
 		const userData = data.user || data;
 		return {
 			userId: userData.user_id,
-			metadata: userData.metadata || {},
+			metadata: userData.metadata,
+			mergeConflictEnabled: userData.merge_conflict_enabled,
 			createdAt: new Date(userData.created_at),
 			lastActiveAt: new Date(userData.last_active_at),
 		};

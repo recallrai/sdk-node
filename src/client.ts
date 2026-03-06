@@ -38,6 +38,10 @@ export class RecallrAI {
 	 *
 	 * @param userId - Unique identifier for the user.
 	 * @param metadata - Optional metadata to associate with the user.
+	 * @param mergeConflictEnabled - Per-user merge conflict override.
+	 *   `true` = always raise merge conflicts for this user.
+	 *   `false` = never raise merge conflicts for this user.
+	 *   `undefined` (default) = inherit the project-level setting.
 	 * @returns The created user object.
 	 * @throws {UserAlreadyExistsError} If a user with the same ID already exists.
 	 * @throws {AuthenticationError} If the API key or project ID is invalid.
@@ -46,11 +50,15 @@ export class RecallrAI {
 	 * @throws {TimeoutError} If the request times out.
 	 * @throws {RecallrAIError} For other API-related errors.
 	 */
-	async createUser(userId: string, metadata?: Record<string, any>): Promise<User> {
-		const response = await this.http.post("/api/v1/users", {
+	async createUser(userId: string, metadata?: Record<string, any>, mergeConflictEnabled?: boolean): Promise<User> {
+		const payload: Record<string, any> = {
 			user_id: userId,
 			metadata: metadata,
-		});
+		};
+		if (mergeConflictEnabled !== undefined) {
+			payload.merge_conflict_enabled = mergeConflictEnabled;
+		}
+		const response = await this.http.post("/api/v1/users", payload);
 
 		if (response.status === 409) {
 			const detail = response.data?.detail || `User with ID ${userId} already exists`;
@@ -140,7 +148,8 @@ export class RecallrAI {
 		const userData = data.user || data;
 		return {
 			userId: userData.user_id,
-			metadata: userData.metadata || {},
+			metadata: userData.metadata,
+			mergeConflictEnabled: userData.merge_conflict_enabled,
 			createdAt: new Date(userData.created_at),
 			lastActiveAt: new Date(userData.last_active_at),
 		};

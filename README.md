@@ -96,9 +96,11 @@ try {
 	await user.update({
 		newMetadata: { name: "John Doe", role: "admin" },
 		newUserId: "john_doe",
+		mergeConflictEnabled: true, // override: always raise merge conflicts for this user
 	});
 	console.log(`Updated user ID: ${user.userId}`);
 	console.log(`Updated metadata:`, user.metadata);
+	console.log(`Merge conflict enabled: ${user.mergeConflictEnabled}`);
 	console.log(`Last active: ${user.lastActiveAt}`);
 } catch (error) {
 	if (error instanceof UserNotFoundError) {

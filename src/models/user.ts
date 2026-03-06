@@ -1,6 +1,7 @@
 export interface UserModel {
 	userId: string;
 	metadata: Record<string, any>;
+	mergeConflictEnabled?: boolean;
 	createdAt: Date;
 	lastActiveAt: Date;
 }
