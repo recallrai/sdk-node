@@ -106,7 +106,7 @@ export class HTTPClient {
 				const detail = response.data?.detail || "Authentication failed";
 				throw new AuthenticationError(detail, response.status);
 			} else if (response.status === 429) {
-				const detail = response.data?.detail || "Please try again in a few moments.";
+				const detail = "429 Too Many Requests. Please try again in a few moments.";
 				throw new RateLimitError(detail, response.status);
 			}
 
