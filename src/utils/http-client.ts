@@ -33,6 +33,7 @@ export class HTTPClient {
 
 		this.client = axios.create({
 			timeout: this.timeout,
+			validateStatus: () => true,
 			headers: {
 				"X-Recallr-Api-Key": this.apiKey,
 				"X-Recallr-Project-Id": this.projectId,
@@ -99,9 +100,14 @@ export class HTTPClient {
 			} else if (response.status === 500) {
 				const detail = response.data?.detail || "Internal server error";
 				throw new InternalServerError(detail, response.status);
+			} else if (response.status === 404 && response.data === "404 page not found") {
+				throw new ConnectionError("Resource not found", response.status);
 			} else if (response.status === 401) {
 				const detail = response.data?.detail || "Authentication failed";
 				throw new AuthenticationError(detail, response.status);
+			} else if (response.status === 429) {
+				const detail = response.data?.detail || "Please try again in a few moments.";
+				throw new RateLimitError(detail, response.status);
 			}
 
 			return response;
@@ -115,21 +121,6 @@ export class HTTPClient {
 
 				if (axiosError.code === "ECONNREFUSED" || axiosError.code === "ENOTFOUND") {
 					throw new ConnectionError(`Failed to connect to the API: ${axiosError.message}`, 0);
-				}
-
-				if (axiosError.response) {
-					const status = axiosError.response.status;
-					const detail = (axiosError.response.data as any)?.detail || axiosError.message;
-
-					if (status === 422) {
-						throw new ValidationError(detail, status);
-					} else if (status === 500) {
-						throw new InternalServerError(detail, status);
-					} else if (status === 401) {
-						throw new AuthenticationError(detail, status);
-					} else if (status === 429) {
-						throw new RateLimitError(detail, status);
-					}
 				}
 			}
 			throw error;
@@ -182,11 +173,30 @@ export class HTTPClient {
 				},
 			});
 
+			if (response.status === 422) {
+				throw new ValidationError("Validation error", response.status);
+			}
+			if (response.status === 500) {
+				throw new InternalServerError("Internal server error", response.status);
+			}
+			if (response.status === 404) {
+				// Read the stream body to check if it's a router-level 404
+				const chunks: Buffer[] = [];
+				for await (const chunk of response.data as AsyncIterable<Buffer>) {
+					chunks.push(chunk);
+					if (Buffer.concat(chunks).length > 100) break;
+				}
+				const bodyText = Buffer.concat(chunks).toString("utf8").trim();
+				if (bodyText === "404 page not found") {
+					throw new ConnectionError("Resource not found", response.status);
+				}
+				return; // API-level 404, empty generator
+			}
+			if (response.status === 401) {
+				throw new AuthenticationError("Authentication failed", response.status);
+			}
 			if (response.status === 429) {
 				throw new RateLimitError("Please try again in a few moments.", response.status);
-			}
-			if (response.status !== 200) {
-				throw new ConnectionError("Unexpected response from server", response.status);
 			}
 
 			let buffer = "";
@@ -210,21 +220,6 @@ export class HTTPClient {
 
 				if (axiosError.code === "ECONNREFUSED" || axiosError.code === "ENOTFOUND") {
 					throw new ConnectionError(`Failed to connect to the API: ${axiosError.message}`, 0);
-				}
-
-				if (axiosError.response) {
-					const status = axiosError.response.status;
-					const detail = (axiosError.response.data as any)?.detail || axiosError.message;
-
-					if (status === 422) {
-						throw new ValidationError(detail, status);
-					} else if (status === 500) {
-						throw new InternalServerError(detail, status);
-					} else if (status === 401) {
-						throw new AuthenticationError(detail, status);
-					} else if (status === 429) {
-						throw new RateLimitError(detail, status);
-					}
 				}
 			}
 			throw error;

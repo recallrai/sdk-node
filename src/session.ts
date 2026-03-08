@@ -155,12 +155,6 @@ export class Session {
 			throw new RecallrAIError(response.data?.detail || "Unknown error", response.status);
 		}
 
-		if (this.status === SessionStatus.PROCESSED) {
-			console.warn("You are trying to get context for a processed session. Why do you need it?");
-		} else if (this.status === SessionStatus.PROCESSING) {
-			console.warn("You are trying to get context for a processing session. Why do you need it?");
-		}
-
 		const result = this.parseContextResponse(response.data);
 		if (systemPromptText !== null && result.context !== undefined) {
 			return { ...result, context: systemPromptText + "\n\n\n" + result.context };

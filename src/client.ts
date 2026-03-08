@@ -52,7 +52,7 @@ export class RecallrAI {
 	 */
 	async createUser(userId: string, metadata?: Record<string, any>, mergeConflictEnabled?: boolean): Promise<User> {
 		const payload: Record<string, any> = {
-			user_id: userId,
+			custom_user_id: userId,
 			metadata: metadata,
 		};
 		if (mergeConflictEnabled !== undefined) {
@@ -147,7 +147,7 @@ export class RecallrAI {
 	private parseUserResponse(data: any): UserModel {
 		const userData = data.user || data;
 		return {
-			userId: userData.user_id,
+			userId: userData.custom_user_id,
 			metadata: userData.metadata,
 			mergeConflictEnabled: userData.merge_conflict_enabled,
 			createdAt: new Date(userData.created_at),

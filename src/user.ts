@@ -87,7 +87,7 @@ export class User {
 			data.new_metadata = newMetadata;
 		}
 		if (newUserId !== undefined) {
-			data.new_user_id = newUserId;
+			data.new_custom_user_id = newUserId;
 		}
 		if (mergeConflictEnabled !== undefined) {
 			data.merge_conflict_enabled = mergeConflictEnabled;
@@ -564,7 +564,7 @@ export class User {
 	private parseUserResponse(data: any): UserModel {
 		const userData = data.user || data;
 		return {
-			userId: userData.user_id,
+			userId: userData.custom_user_id,
 			metadata: userData.metadata,
 			mergeConflictEnabled: userData.merge_conflict_enabled,
 			createdAt: new Date(userData.created_at),
