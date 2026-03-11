@@ -7,6 +7,7 @@ export interface UserModel {
 }
 
 export interface MemoryVersionInfo {
+	memoryId: string;
 	versionNumber: number;
 	content: string;
 	eventDateStart: Date;
@@ -14,6 +15,7 @@ export interface MemoryVersionInfo {
 	createdAt: Date;
 	expiredAt: Date;
 	expirationReason: string;
+	mergeConflictId?: string | null;
 }
 
 export interface MemoryRelationship {
@@ -28,12 +30,15 @@ export interface UserMemoryItem {
 	eventDateStart: Date;
 	eventDateEnd: Date;
 	createdAt: Date;
+	expiredAt?: Date;
+	expirationReason?: string;
 	versionNumber: number;
 	totalVersions: number;
 	hasPreviousVersions: boolean;
 	previousVersions?: MemoryVersionInfo[];
 	connectedMemories?: MemoryRelationship[];
 	mergeConflictInProgress: boolean;
+	mergeConflictId?: string | null;
 	sessionId: string;
 }
 

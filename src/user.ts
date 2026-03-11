@@ -590,11 +590,14 @@ export class User {
 			eventDateStart: new Date(data.event_date_start),
 			eventDateEnd: new Date(data.event_date_end),
 			createdAt: new Date(data.created_at),
+			expiredAt: data.expired_at ? new Date(data.expired_at) : undefined,
+			expirationReason: data.expiration_reason ?? undefined,
 			versionNumber: data.version_number,
 			totalVersions: data.total_versions,
 			hasPreviousVersions: data.has_previous_versions,
 			previousVersions: data.previous_versions
 				? data.previous_versions.map((v: any) => ({
+						memoryId: v.memory_id,
 						versionNumber: v.version_number,
 						content: v.content,
 						eventDateStart: new Date(v.event_date_start),
@@ -602,6 +605,7 @@ export class User {
 						createdAt: new Date(v.created_at),
 						expiredAt: new Date(v.expired_at),
 						expirationReason: v.expiration_reason,
+						mergeConflictId: v.merge_conflict_id ?? null,
 					}))
 				: undefined,
 			connectedMemories: data.connected_memories
@@ -611,6 +615,7 @@ export class User {
 					}))
 				: undefined,
 			mergeConflictInProgress: data.merge_conflict_in_progress,
+			mergeConflictId: data.merge_conflict_id ?? null,
 			sessionId: data.session_id,
 		};
 	}
