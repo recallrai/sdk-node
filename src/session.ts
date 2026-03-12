@@ -116,10 +116,20 @@ export class Session {
 		includeSystemPrompt?: boolean;
 		includeMetadataIds?: boolean;
 	} = {}): Promise<ContextResponse> {
-		// Fetch and cache the system prompt client-side to avoid sending ~20 KB on every request
-		let systemPromptText: string | null = null;
+		// Fetch and cache the strategy-specific system prompt client-side to avoid sending ~20 KB on every request
+		let _structuredPrompt: string | null = null;
+		let _agenticPrompt: string | null = null;
 		if (includeSystemPrompt) {
-			systemPromptText = await this.http.getCachedSystemPrompt();
+			if (recallStrategy === RecallStrategy.AUTO) {
+				[_structuredPrompt, _agenticPrompt] = await Promise.all([
+					this.http.getCachedSystemPrompt(RecallStrategy.LOW_LATENCY),
+					this.http.getCachedSystemPrompt(RecallStrategy.AGENTIC),
+				]);
+			} else if (recallStrategy === RecallStrategy.AGENTIC) {
+				_agenticPrompt = await this.http.getCachedSystemPrompt(RecallStrategy.AGENTIC);
+			} else {
+				_structuredPrompt = await this.http.getCachedSystemPrompt(recallStrategy);
+			}
 		}
 
 		const params: Record<string, any> = {
@@ -156,8 +166,21 @@ export class Session {
 		}
 
 		const result = this.parseContextResponse(response.data);
-		if (systemPromptText !== null && result.context !== undefined) {
-			return { ...result, context: systemPromptText + "\n\n\n" + result.context };
+		if (includeSystemPrompt && result.context !== undefined) {
+			const recallStrategyUsed = result.metadata?.recallStrategyUsed;
+			if (recallStrategyUsed) {
+				let systemPromptText: string | null = null;
+				if (recallStrategyUsed === RecallStrategy.AGENTIC) {
+					systemPromptText = _agenticPrompt;
+				} else if (recallStrategyUsed === RecallStrategy.LOW_LATENCY || recallStrategyUsed === RecallStrategy.BALANCED) {
+					systemPromptText = _structuredPrompt;
+				} else {
+					systemPromptText = _structuredPrompt;
+				}
+				if (systemPromptText !== null) {
+					return { ...result, context: systemPromptText + "\n\n\n" + result.context };
+				}
+			}
 		}
 		return result;
 	}
@@ -207,10 +230,20 @@ export class Session {
 		includeSystemPrompt?: boolean;
 		includeMetadataIds?: boolean;
 	} = {}): AsyncGenerator<ContextResponse> {
-		// Fetch and cache the system prompt client-side to avoid sending ~20 KB on every request
-		let systemPromptText: string | null = null;
+		// Fetch and cache the strategy-specific system prompt client-side to avoid sending ~20 KB on every request
+		let _structuredPrompt: string | null = null;
+		let _agenticPrompt: string | null = null;
 		if (includeSystemPrompt) {
-			systemPromptText = await this.http.getCachedSystemPrompt();
+			if (recallStrategy === RecallStrategy.AUTO) {
+				[_structuredPrompt, _agenticPrompt] = await Promise.all([
+					this.http.getCachedSystemPrompt(RecallStrategy.LOW_LATENCY),
+					this.http.getCachedSystemPrompt(RecallStrategy.AGENTIC),
+				]);
+			} else if (recallStrategy === RecallStrategy.AGENTIC) {
+				_agenticPrompt = await this.http.getCachedSystemPrompt(RecallStrategy.AGENTIC);
+			} else {
+				_structuredPrompt = await this.http.getCachedSystemPrompt(recallStrategy);
+			}
 		}
 
 		const params: Record<string, any> = {
@@ -240,8 +273,25 @@ export class Session {
 			if (!payload) continue;
 			const data = JSON.parse(payload);
 			const event = this.parseContextResponse(data);
-			if (systemPromptText !== null && event.isFinal && event.context !== undefined) {
-				yield { ...event, context: systemPromptText + "\n\n\n" + event.context };
+			if (includeSystemPrompt && event.isFinal && event.context !== undefined) {
+				const recallStrategyUsed = event.metadata?.recallStrategyUsed;
+				if (recallStrategyUsed) {
+					let systemPromptText: string | null = null;
+					if (recallStrategyUsed === RecallStrategy.AGENTIC) {
+						systemPromptText = _agenticPrompt;
+					} else if (recallStrategyUsed === RecallStrategy.LOW_LATENCY || recallStrategyUsed === RecallStrategy.BALANCED) {
+						systemPromptText = _structuredPrompt;
+					} else {
+						systemPromptText = _structuredPrompt;
+					}
+					if (systemPromptText !== null) {
+						yield { ...event, context: systemPromptText + "\n\n\n" + event.context };
+					} else {
+						yield event;
+					}
+				} else {
+					yield event;
+				}
 			} else {
 				yield event;
 			}
@@ -266,6 +316,7 @@ export class Session {
 					keywords: metadataData.keywords ?? undefined,
 					sessionSummariesSearchQueries: metadataData.session_summaries_search_queries ?? undefined,
 					dateRangeFilters,
+					recallStrategyUsed: metadataData.recall_strategy_used as RecallStrategy ?? undefined,
 			}
 			: undefined;
 		return {

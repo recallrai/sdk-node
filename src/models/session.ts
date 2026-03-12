@@ -56,6 +56,7 @@ export interface ContextMetadata {
 	keywords?: string[];
 	sessionSummariesSearchQueries?: string[];
 	dateRangeFilters?: QueryDateRangeFilter[];
+	recallStrategyUsed?: RecallStrategy;
 }
 
 export interface ContextResponse {

@@ -4,6 +4,7 @@
 
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from "axios";
 import { TimeoutError, ConnectionError, ValidationError, InternalServerError, AuthenticationError, RateLimitError } from "../errors";
+import { RecallStrategy } from "../models";
 
 /**
  * HTTP client for making requests to the RecallrAI API.
@@ -14,8 +15,8 @@ export class HTTPClient {
 	private projectId: string;
 	private baseUrl: string;
 	private timeout: number;
-	private _systemPromptCache: string | null = null;
-	private _systemPromptCacheExpiresAt: number = 0;
+	private _systemPromptCacheByStrategy: Map<string, string> = new Map();
+	private _systemPromptCacheExpiresAt: Map<string, number> = new Map();
 
 	/**
 	 * Initialize the HTTP client.
@@ -227,16 +228,19 @@ export class HTTPClient {
 	}
 
 	/**
-	 * Fetch the global system prompt, caching it for one hour.
+	 * Fetch the strategy-specific system prompt, caching it per strategy for one hour.
 	 */
-	async getCachedSystemPrompt(): Promise<string> {
+	async getCachedSystemPrompt(recallStrategy: RecallStrategy = RecallStrategy.BALANCED): Promise<string> {
+		const key = recallStrategy as string;
 		const now = Date.now();
-		if (this._systemPromptCache !== null && now < this._systemPromptCacheExpiresAt) {
-			return this._systemPromptCache;
+		const cached = this._systemPromptCacheByStrategy.get(key);
+		if (cached !== undefined && now < (this._systemPromptCacheExpiresAt.get(key) ?? 0)) {
+			return cached;
 		}
-		const response = await this.get("/api/v1/system-prompt");
-		this._systemPromptCache = response.data.system_prompt as string;
-		this._systemPromptCacheExpiresAt = now + 3600 * 1000;
-		return this._systemPromptCache;
+		const response = await this.get("/api/v1/system-prompt", { recall_strategy: key });
+		const prompt = response.data.system_prompt as string;
+		this._systemPromptCacheByStrategy.set(key, prompt);
+		this._systemPromptCacheExpiresAt.set(key, now + 3600 * 1000);
+		return prompt;
 	}
 }
