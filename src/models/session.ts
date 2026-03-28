@@ -1,3 +1,5 @@
+import type { Unavailable } from "./unavailable";
+
 export enum MessageRole {
 	USER = "user",
 	ASSISTANT = "assistant",
@@ -25,9 +27,9 @@ export enum SessionStatus {
 
 export interface SessionModel {
 	sessionId: string;
-	status: SessionStatus;
-	createdAt: Date;
-	metadata: Record<string, any>;
+	status: SessionStatus | Unavailable;
+	createdAt: Date | Unavailable;
+	metadata: Record<string, any> | Unavailable;
 }
 
 export enum RecallStrategy {

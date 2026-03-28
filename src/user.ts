@@ -7,12 +7,14 @@ import {
 	UserModel,
 	SessionModel,
 	SessionStatus,
+	UNAVAILABLE,
 	UserMemoriesList,
 	UserMessagesList,
 	UserMemoryItem,
 	MergeConflictModel,
 	MergeConflictStatus,
 } from "./models";
+import type { Unavailable } from "./models";
 import { Session } from "./session";
 import { MergeConflict } from "./merge-conflict";
 import {
@@ -35,10 +37,10 @@ export class User {
 	private userData: UserModel;
 
 	public userId: string;
-	public metadata: Record<string, any>;
-	public mergeConflictEnabled: boolean | undefined;
-	public createdAt: Date;
-	public lastActiveAt: Date;
+	public metadata: Record<string, any> | Unavailable;
+	public mergeConflictEnabled: boolean | undefined | Unavailable;
+	public createdAt: Date | Unavailable;
+	public lastActiveAt: Date | Unavailable;
 
 	/**
 	 * Initialize a user.
@@ -212,6 +214,9 @@ export class User {
 	 * Get an existing session for this user.
 	 *
 	 * @param sessionId - ID of the session to retrieve.
+	 * @param options - Optional behavior flags.
+	 * @param options.validate - Whether to validate session existence via API before creating the instance.
+	 *   Defaults to true. Set to false when sessionId is trusted.
 	 * @returns A Session object to interact with the session.
 	 * @throws {UserNotFoundError} If the user is not found.
 	 * @throws {SessionNotFoundError} If the session is not found.
@@ -221,7 +226,16 @@ export class User {
 	 * @throws {TimeoutError} If the request times out.
 	 * @throws {RecallrAIError} For other API-related errors.
 	 */
-	async getSession(sessionId: string): Promise<Session> {
+	async getSession(sessionId: string, { validate = true }: { validate?: boolean } = {}): Promise<Session> {
+		if (!validate) {
+			return new Session(this.http, this.userId, {
+				sessionId,
+				status: UNAVAILABLE,
+				createdAt: UNAVAILABLE,
+				metadata: UNAVAILABLE,
+			});
+		}
+
 		const response = await this.http.get(`/api/v1/users/${this.userId}/sessions/${sessionId}`);
 
 		if (response.status === 404) {
@@ -352,8 +366,8 @@ export class User {
 			throw new UserNotFoundError(detail, response.status);
 		} else if (response.status === 400) {
 			const detailData = response.data?.detail;
-			let message: string = detailData.message;
-			let invalidCats: string[] = detailData.invalid_categories;
+			const message: string = detailData.message;
+			const invalidCats: string[] = detailData.invalid_categories;
 			throw new InvalidCategoriesError(message, response.status, invalidCats);
 		} else if (response.status !== 200) {
 			throw new RecallrAIError(response.data?.detail || "Unknown error", response.status);

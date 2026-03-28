@@ -5,7 +5,7 @@
  */
 
 import { HTTPClient } from "./utils";
-import { UserModel } from "./models";
+import { UNAVAILABLE, UserModel } from "./models";
 import { User } from "./user";
 import { UserAlreadyExistsError, UserNotFoundError, RecallrAIError } from "./errors";
 
@@ -76,6 +76,9 @@ export class RecallrAI {
 	 * Get a user by ID.
 	 *
 	 * @param userId - Unique identifier of the user.
+	 * @param options - Optional behavior flags.
+	 * @param options.validate - Whether to validate user existence via API before creating the instance.
+	 *   Defaults to true. Set to false when userId is trusted.
 	 * @returns A User object representing the user.
 	 * @throws {UserNotFoundError} If the user is not found.
 	 * @throws {AuthenticationError} If the API key or project ID is invalid.
@@ -84,7 +87,17 @@ export class RecallrAI {
 	 * @throws {TimeoutError} If the request times out.
 	 * @throws {RecallrAIError} For other API-related errors.
 	 */
-	async getUser(userId: string): Promise<User> {
+	async getUser(userId: string, { validate = true }: { validate?: boolean } = {}): Promise<User> {
+		if (!validate) {
+			return new User(this.http, {
+				userId,
+				metadata: UNAVAILABLE,
+				mergeConflictEnabled: UNAVAILABLE,
+				createdAt: UNAVAILABLE,
+				lastActiveAt: UNAVAILABLE,
+			});
+		}
+
 		const response = await this.http.get(`/api/v1/users/${userId}`);
 
 		if (response.status === 404) {

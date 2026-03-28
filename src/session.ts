@@ -4,6 +4,7 @@
 
 import { HTTPClient } from "./utils";
 import { ContextResponse, SessionMessagesList, SessionModel, SessionStatus, MessageRole, RecallStrategy } from "./models";
+import type { Unavailable } from "./models";
 import { UserNotFoundError, SessionNotFoundError, InvalidSessionStateError, RecallrAIError } from "./errors";
 
 /**
@@ -18,9 +19,9 @@ export class Session {
 	private _userId: string;
 
 	public sessionId: string;
-	public status: SessionStatus;
-	public createdAt: Date;
-	public metadata: Record<string, any>;
+	public status: SessionStatus | Unavailable;
+	public createdAt: Date | Unavailable;
+	public metadata: Record<string, any> | Unavailable;
 
 	/**
 	 * Initialize a session.

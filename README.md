@@ -64,6 +64,12 @@ try {
 }
 ```
 
+If `userId` is already trusted, you can skip the lookup request:
+
+```typescript
+const user = await client.getUser("user123", { validate: false });
+```
+
 ### List Users
 
 ```typescript
@@ -185,6 +191,36 @@ try {
 	}
 }
 ```
+
+If `sessionId` is trusted, you can skip this lookup request:
+
+```typescript
+const session = await user.getSession("session-uuid", { validate: false });
+```
+
+### Trusted IDs - Skip Validation Lookups
+
+```typescript
+import { RecallStrategy } from "recallrai";
+
+// Skips GET /api/v1/users/{userId}
+const user = await client.getUser("user123", { validate: false });
+
+// Skips GET /api/v1/users/{userId}/sessions/{sessionId}
+const session = await user.getSession("session-uuid", { validate: false });
+
+// Goes directly to context retrieval
+const context = await session.getContext({
+	recallStrategy: RecallStrategy.LOW_LATENCY,
+});
+
+console.log(context.context);
+```
+
+Use this only when IDs are already trusted by your system. This optimization skips SDK pre-validation calls.
+
+When `validate: false` is used, unknown reference fields are set to `UNAVAILABLE` until you call `refresh()`.
+Import it from `recallrai` when you need to check for this sentinel.
 
 ### Update a Session
 

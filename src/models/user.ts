@@ -1,9 +1,11 @@
+import type { Unavailable } from "./unavailable";
+
 export interface UserModel {
 	userId: string;
-	metadata: Record<string, any>;
-	mergeConflictEnabled?: boolean;
-	createdAt: Date;
-	lastActiveAt: Date;
+	metadata: Record<string, any> | Unavailable;
+	mergeConflictEnabled?: boolean | Unavailable;
+	createdAt: Date | Unavailable;
+	lastActiveAt: Date | Unavailable;
 }
 
 export interface MemoryVersionInfo {
