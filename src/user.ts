@@ -37,7 +37,7 @@ export class User {
 	private userData: UserModel;
 
 	public userId: string;
-	public planId: string | null | Unavailable;
+	public planId: string | Unavailable;
 	public metadata: Record<string, any> | Unavailable;
 	public mergeConflictEnabled: boolean | undefined | Unavailable;
 	public createdAt: Date | Unavailable;

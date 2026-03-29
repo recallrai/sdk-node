@@ -22,8 +22,8 @@ export class Session {
 	public status: SessionStatus | Unavailable;
 	public createdAt: Date | Unavailable;
 	public metadata: Record<string, any> | Unavailable;
-	public planUsedId: string | null | Unavailable;
-	public planUsedVersion: string | null | Unavailable;
+	public planUsedId: string | Unavailable;
+	public planUsedVersion: string | Unavailable;
 
 	/**
 	 * Initialize a session.
