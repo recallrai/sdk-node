@@ -37,8 +37,9 @@ const client = new RecallrAI({
 import { UserAlreadyExistsError } from "recallrai";
 
 try {
-	const user = await client.createUser("user123", { name: "John Doe" });
+	const user = await client.createUser("user123", "plan_basic_v1", { name: "John Doe" });
 	console.log(`Created user: ${user.userId}`);
+	console.log(`Assigned plan: ${user.planId}`);
 	console.log(`User metadata:`, user.metadata);
 	console.log(`Created at: ${user.createdAt}`);
 } catch (error) {
@@ -55,6 +56,7 @@ import { UserNotFoundError } from "recallrai";
 
 try {
 	const user = await client.getUser("user123");
+	console.log(`User plan: ${user.planId}`);
 	console.log(`User metadata:`, user.metadata);
 	console.log(`Last active: ${user.lastActiveAt}`);
 } catch (error) {
@@ -85,6 +87,7 @@ console.log("---");
 
 for (const u of userList.users) {
 	console.log(`User ID: ${u.userId}`);
+	console.log(`Plan: ${u.planId}`);
 	console.log(`Metadata:`, u.metadata);
 	console.log(`Created at: ${u.createdAt}`);
 	console.log(`Last active: ${u.lastActiveAt}`);
@@ -102,9 +105,11 @@ try {
 	await user.update({
 		newMetadata: { name: "John Doe", role: "admin" },
 		newUserId: "john_doe",
+		newPlanId: "plan_pro_v2",
 		mergeConflictEnabled: true, // override: always raise merge conflicts for this user
 	});
 	console.log(`Updated user ID: ${user.userId}`);
+	console.log(`Updated plan: ${user.planId}`);
 	console.log(`Updated metadata:`, user.metadata);
 	console.log(`Merge conflict enabled: ${user.mergeConflictEnabled}`);
 	console.log(`Last active: ${user.lastActiveAt}`);
@@ -125,6 +130,7 @@ import { UserNotFoundError } from "recallrai";
 try {
 	const user = await client.getUser("john_doe");
 	await user.refresh();
+	console.log(`Refreshed user plan: ${user.planId}`);
 	console.log(`Refreshed user metadata:`, user.metadata);
 	console.log(`Last active: ${user.lastActiveAt}`);
 } catch (error) {
@@ -182,6 +188,8 @@ try {
 
 	const session = await user.getSession("session-uuid");
 	console.log("Session status:", session.status);
+	console.log("Plan used:", session.planUsedId);
+	console.log("Plan used version:", session.planUsedVersion);
 	console.log("Session metadata:", session.metadata);
 } catch (error) {
 	if (error instanceof UserNotFoundError) {
@@ -219,7 +227,7 @@ console.log(context.context);
 
 Use this only when IDs are already trusted by your system. This optimization skips SDK pre-validation calls.
 
-When `validate: false` is used, unknown reference fields are set to `UNAVAILABLE` until you call `refresh()`.
+When `validate: false` is used, unknown reference fields (for example `user.planId`, `session.planUsedId`, timestamps, and metadata) are set to `UNAVAILABLE` until you call `refresh()`.
 Import it from `recallrai` when you need to check for this sentinel.
 
 ### Update a Session
@@ -253,6 +261,8 @@ try {
 
 	await session.refresh();
 	console.log("Session status:", session.status);
+	console.log("Refreshed plan used:", session.planUsedId);
+	console.log("Refreshed plan used version:", session.planUsedVersion);
 	console.log("Refreshed session metadata:", session.metadata);
 } catch (error) {
 	if (error instanceof UserNotFoundError) {
@@ -702,7 +712,7 @@ async function chatWithMemory(userId: string, sessionId?: string) {
 		user = await raiClient.getUser(userId);
 	} catch (error) {
 		if (error instanceof UserNotFoundError) {
-			user = await raiClient.createUser(userId);
+			user = await raiClient.createUser(userId, "plan_basic_v1");
 		} else {
 			throw error;
 		}

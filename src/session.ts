@@ -22,6 +22,8 @@ export class Session {
 	public status: SessionStatus | Unavailable;
 	public createdAt: Date | Unavailable;
 	public metadata: Record<string, any> | Unavailable;
+	public planUsedId: string | null | Unavailable;
+	public planUsedVersion: string | null | Unavailable;
 
 	/**
 	 * Initialize a session.
@@ -38,6 +40,8 @@ export class Session {
 		this.status = sessionData.status;
 		this.createdAt = sessionData.createdAt;
 		this.metadata = sessionData.metadata;
+		this.planUsedId = sessionData.planUsedId;
+		this.planUsedVersion = sessionData.planUsedVersion;
 	}
 
 	/**
@@ -385,7 +389,12 @@ export class Session {
 		}
 
 		const updatedData = this.parseSessionResponse(response.data);
+		this.sessionData = updatedData;
+		this.status = updatedData.status;
+		this.createdAt = updatedData.createdAt;
 		this.metadata = updatedData.metadata;
+		this.planUsedId = updatedData.planUsedId;
+		this.planUsedVersion = updatedData.planUsedVersion;
 	}
 
 	/**
@@ -420,6 +429,8 @@ export class Session {
 		this.status = this.sessionData.status;
 		this.createdAt = this.sessionData.createdAt;
 		this.metadata = this.sessionData.metadata;
+		this.planUsedId = this.sessionData.planUsedId;
+		this.planUsedVersion = this.sessionData.planUsedVersion;
 	}
 
 	/**
@@ -501,6 +512,8 @@ export class Session {
 			status: sessionData.status as SessionStatus,
 			createdAt: new Date(sessionData.created_at),
 			metadata: sessionData.metadata,
+			planUsedId: sessionData.plan_used_id,
+			planUsedVersion: sessionData.plan_used_version,
 		};
 	}
 

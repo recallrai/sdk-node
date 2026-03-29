@@ -37,6 +37,7 @@ export class RecallrAI {
 	 * Create a new user.
 	 *
 	 * @param userId - Unique identifier for the user.
+	 * @param planId - Plan identifier to assign to the user.
 	 * @param metadata - Optional metadata to associate with the user.
 	 * @param mergeConflictEnabled - Per-user merge conflict override.
 	 *   `true` = always raise merge conflicts for this user.
@@ -50,9 +51,10 @@ export class RecallrAI {
 	 * @throws {TimeoutError} If the request times out.
 	 * @throws {RecallrAIError} For other API-related errors.
 	 */
-	async createUser(userId: string, metadata?: Record<string, any>, mergeConflictEnabled?: boolean): Promise<User> {
+	async createUser(userId: string, planId: string, metadata?: Record<string, any>, mergeConflictEnabled?: boolean): Promise<User> {
 		const payload: Record<string, any> = {
 			custom_user_id: userId,
+			plan_id: planId,
 			metadata: metadata,
 		};
 		if (mergeConflictEnabled !== undefined) {
@@ -91,6 +93,7 @@ export class RecallrAI {
 		if (!validate) {
 			return new User(this.http, {
 				userId,
+				planId: UNAVAILABLE,
 				metadata: UNAVAILABLE,
 				mergeConflictEnabled: UNAVAILABLE,
 				createdAt: UNAVAILABLE,
@@ -161,6 +164,7 @@ export class RecallrAI {
 		const userData = data.user || data;
 		return {
 			userId: userData.custom_user_id,
+			planId: userData.plan_id,
 			metadata: userData.metadata,
 			mergeConflictEnabled: userData.merge_conflict_enabled,
 			createdAt: new Date(userData.created_at),

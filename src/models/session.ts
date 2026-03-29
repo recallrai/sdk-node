@@ -30,6 +30,8 @@ export interface SessionModel {
 	status: SessionStatus | Unavailable;
 	createdAt: Date | Unavailable;
 	metadata: Record<string, any> | Unavailable;
+	planUsedId: string | null | Unavailable;
+	planUsedVersion: string | null | Unavailable;
 }
 
 export enum RecallStrategy {
