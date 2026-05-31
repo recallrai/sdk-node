@@ -40,7 +40,7 @@ export class HTTPClient {
 				"X-Recallr-Project-Id": this.projectId,
 				"Content-Type": "application/json",
 				"Accept": "application/json",
-				"User-Agent": "RecallrAI-Node-SDK/0.6.3",
+				"User-Agent": "RecallrAI-Node-SDK/0.6.4",
 			},
 		});
 	}
