@@ -25,7 +25,17 @@ export class RecallrAI {
 	 * @param baseUrl - The base URL for the RecallrAI API. Defaults to `https://api.recallrai.com`.
 	 * @param timeout - Request timeout in seconds. Defaults to `30`.
 	 */
-	constructor({ apiKey, projectId, baseUrl = "https://api.recallrai.com", timeout = 30 }: { apiKey: string; projectId: string; baseUrl?: string; timeout?: number }) {
+	constructor({
+		apiKey,
+		projectId,
+		baseUrl = "https://api.recallrai.com",
+		timeout = 30,
+	}: {
+		apiKey: string;
+		projectId: string;
+		baseUrl?: string;
+		timeout?: number;
+	}) {
 		if (!apiKey.startsWith("rai_")) {
 			throw new Error("API key must start with 'rai_'");
 		}

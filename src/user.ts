@@ -431,10 +431,9 @@ export class User {
 	 * @throws {TimeoutError} If the request times out.
 	 */
 	async deleteMemory(memoryId: string, deletePreviousVersions: boolean = false): Promise<void> {
-		const response = await this.http.delete(
-			`/api/v1/users/${this.userId}/memory/${memoryId}`,
-			{ delete_previous_versions: deletePreviousVersions },
-		);
+		const response = await this.http.delete(`/api/v1/users/${this.userId}/memory/${memoryId}`, {
+			delete_previous_versions: deletePreviousVersions,
+		});
 
 		if (response.status === 404) {
 			const detail = response.data?.detail || `Memory ${memoryId} not found`;

@@ -170,7 +170,7 @@ export class HTTPClient {
 				params: filteredParams,
 				responseType: "stream",
 				headers: {
-					"Accept": "text/event-stream",
+					Accept: "text/event-stream",
 				},
 			});
 

@@ -20,7 +20,8 @@
 		"build": "tsc",
 		"lint": "eslint src --ext .ts",
 		"format": "prettier --write src",
-		"format:check": "prettier --check src"
+		"format:check": "prettier --check src",
+		"prepare": "husky"
 	},
 	"keywords": [
 		"ai",
@@ -51,6 +52,7 @@
 		"@typescript-eslint/eslint-plugin": "^8.60.0",
 		"@typescript-eslint/parser": "^8.60.0",
 		"eslint": "^8.51.0",
+		"husky": "^9.1.7",
 		"typescript": "^5.2.2"
 	},
 	"engines": {

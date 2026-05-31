@@ -3,7 +3,14 @@
  */
 
 import { HTTPClient } from "./utils";
-import { MergeConflictModel, MergeConflictStatus, MergeConflictAnswer, MergeConflictConflictingMemory, MergeConflictNewMemory, MergeConflictQuestion } from "./models";
+import {
+	MergeConflictModel,
+	MergeConflictStatus,
+	MergeConflictAnswer,
+	MergeConflictConflictingMemory,
+	MergeConflictNewMemory,
+	MergeConflictQuestion,
+} from "./models";
 import {
 	UserNotFoundError,
 	MergeConflictNotFoundError,

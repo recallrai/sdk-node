@@ -317,8 +317,8 @@ export class Session {
 					keywords: metadataData.keywords ?? undefined,
 					sessionSummariesSearchQueries: metadataData.session_summaries_search_queries ?? undefined,
 					dateRangeFilters,
-					recallStrategyUsed: metadataData.recall_strategy_used as RecallStrategy ?? undefined,
-			}
+					recallStrategyUsed: (metadataData.recall_strategy_used as RecallStrategy) ?? undefined,
+				}
 			: undefined;
 		return {
 			isFinal: Boolean(data?.is_final),
