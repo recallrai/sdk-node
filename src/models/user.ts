@@ -2,6 +2,7 @@ import type { Unavailable } from "./unavailable";
 
 export interface UserModel {
 	userId: string;
+	planId: string | Unavailable;
 	metadata: Record<string, any> | Unavailable;
 	mergeConflictEnabled?: boolean | Unavailable;
 	createdAt: Date | Unavailable;

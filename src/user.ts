@@ -37,6 +37,7 @@ export class User {
 	private userData: UserModel;
 
 	public userId: string;
+	public planId: string | Unavailable;
 	public metadata: Record<string, any> | Unavailable;
 	public mergeConflictEnabled: boolean | undefined | Unavailable;
 	public createdAt: Date | Unavailable;
@@ -52,6 +53,7 @@ export class User {
 		this.http = httpClient;
 		this.userData = userData;
 		this.userId = userData.userId;
+		this.planId = userData.planId;
 		this.metadata = userData.metadata;
 		this.mergeConflictEnabled = userData.mergeConflictEnabled;
 		this.createdAt = userData.createdAt;
@@ -59,10 +61,11 @@ export class User {
 	}
 
 	/**
-	 * Update this user's metadata or ID.
+	 * Update this user's metadata, ID, or assigned plan.
 	 *
 	 * @param newMetadata - New metadata to associate with the user.
 	 * @param newUserId - New ID for the user.
+	 * @param newPlanId - New plan identifier to assign to the user.
 	 * @param mergeConflictEnabled - Per-user merge conflict override.
 	 *   `true` = always raise merge conflicts for this user.
 	 *   `false` = never raise merge conflicts for this user.
@@ -78,10 +81,12 @@ export class User {
 	async update({
 		newMetadata,
 		newUserId,
+		newPlanId,
 		mergeConflictEnabled,
 	}: {
 		newMetadata?: Record<string, any>;
 		newUserId?: string;
+		newPlanId?: string;
 		mergeConflictEnabled?: boolean;
 	} = {}): Promise<void> {
 		const data: Record<string, any> = {};
@@ -90,6 +95,9 @@ export class User {
 		}
 		if (newUserId !== undefined) {
 			data.new_custom_user_id = newUserId;
+		}
+		if (newPlanId !== undefined) {
+			data.new_plan_id = newPlanId;
 		}
 		if (mergeConflictEnabled !== undefined) {
 			data.merge_conflict_enabled = mergeConflictEnabled;
@@ -110,6 +118,7 @@ export class User {
 		const updatedData = this.parseUserResponse(response.data);
 		this.userData = updatedData;
 		this.userId = updatedData.userId;
+		this.planId = updatedData.planId;
 		this.metadata = updatedData.metadata;
 		this.mergeConflictEnabled = updatedData.mergeConflictEnabled;
 		this.lastActiveAt = updatedData.lastActiveAt;
@@ -138,6 +147,7 @@ export class User {
 		const refreshedData = this.parseUserResponse(response.data);
 		this.userData = refreshedData;
 		this.userId = refreshedData.userId;
+		this.planId = refreshedData.planId;
 		this.metadata = refreshedData.metadata;
 		this.mergeConflictEnabled = refreshedData.mergeConflictEnabled;
 		this.createdAt = refreshedData.createdAt;
@@ -233,6 +243,8 @@ export class User {
 				status: UNAVAILABLE,
 				createdAt: UNAVAILABLE,
 				metadata: UNAVAILABLE,
+				planUsedId: UNAVAILABLE,
+				planUsedVersion: UNAVAILABLE,
 			});
 		}
 
@@ -578,6 +590,7 @@ export class User {
 		const userData = data.user || data;
 		return {
 			userId: userData.custom_user_id,
+			planId: userData.plan_id,
 			metadata: userData.metadata,
 			mergeConflictEnabled: userData.merge_conflict_enabled,
 			createdAt: new Date(userData.created_at),
@@ -592,6 +605,8 @@ export class User {
 			status: sessionData.status as SessionStatus,
 			createdAt: new Date(sessionData.created_at),
 			metadata: sessionData.metadata,
+			planUsedId: sessionData.plan_used_id,
+			planUsedVersion: sessionData.plan_used_version,
 		};
 	}
 
