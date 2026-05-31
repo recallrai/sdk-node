@@ -33,6 +33,9 @@ jobs:
   publish-to-npm:
     needs: create-release
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for npm Trusted Publishing (OIDC)
+      contents: read
     steps:
       - uses: actions/checkout@v6
 
@@ -42,7 +45,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "18.x"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
           cache: "pnpm"
 
@@ -59,11 +62,5 @@ jobs:
       #   run: pnpm test
 
       - name: Publish package
-        run: |
-          if [ -n "${{ secrets.NPM_ORG }}" ]; then
-            pnpm publish --access public --scope=${{ secrets.NPM_ORG }} --no-git-checks
-          else
-            pnpm publish --no-git-checks
-          fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
+
