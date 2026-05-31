@@ -11,30 +11,34 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
           node-version: "18.x"
           registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Build package
-        run: npm run build
+        run: pnpm run build
 
       # - name: Test
-      #   run: npm test
+      #   run: pnpm test
 
       - name: Publish package
         run: |
           if [ -n "${{ secrets.NPM_ORG }}" ]; then
-            npm publish --access public --scope=${{ secrets.NPM_ORG }}
+            pnpm publish --access public --scope=${{ secrets.NPM_ORG }}
           else
-            npm publish
+            pnpm publish
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
