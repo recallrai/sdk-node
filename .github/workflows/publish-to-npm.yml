@@ -1,8 +1,8 @@
-name: Publish to npm
+name: Publish to npm (manual)
 
+# Automatic publishing happens in create-release.yml on tag push.
+# This workflow is a manual fallback for re-publishing without a new tag.
 on:
-  release:
-    types: [created]
   workflow_dispatch:
 
 jobs:
@@ -36,9 +36,9 @@ jobs:
       - name: Publish package
         run: |
           if [ -n "${{ secrets.NPM_ORG }}" ]; then
-            pnpm publish --access public --scope=${{ secrets.NPM_ORG }}
+            pnpm publish --access public --scope=${{ secrets.NPM_ORG }} --no-git-checks
           else
-            pnpm publish
+            pnpm publish --no-git-checks
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

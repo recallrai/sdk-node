@@ -1,4 +1,4 @@
-name: Create Release
+name: Create Release and Publish
 
 on:
   push:
@@ -29,3 +29,41 @@ jobs:
           gh release create ${{ github.ref_name }} \
             --title "${{ github.ref_name }}" \
             --notes "Full Changelog: https://github.com/${{ github.repository }}/compare/${{ steps.previoustag.outputs.previous_tag }}...${{ github.ref_name }}"
+
+  publish-to-npm:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "18.x"
+          registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Build package
+        run: pnpm run build
+
+      # - name: Test
+      #   run: pnpm test
+
+      - name: Publish package
+        run: |
+          if [ -n "${{ secrets.NPM_ORG }}" ]; then
+            pnpm publish --access public --scope=${{ secrets.NPM_ORG }} --no-git-checks
+          else
+            pnpm publish --no-git-checks
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
